@@ -139,9 +139,32 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
+  const ip = extractIp(request);
+  const ua = extractUa(request);
+
+  const lockState = await hitBucket({
+    key: `teacher-lock:ip:${ip}`,
+    limit: 5,
+    windowSec: 300,
+  });
+  if (!lockState.ok) {
+    logAction({
+      actor: "ogretmen", action: "login_locked",
+      meta: { until: new Date(Date.now() + lockState.retryAfter * 1000) },
+      ip, ua,
+    });
+    const r = rateLimitResponse(lockState, "Çok fazla başarısız giriş.");
+    return NextResponse.json(r.body, { status: 429, headers: r.headers });
+  }
+
   try {
     const auth = request.headers.get("x-teacher-password");
     if (!auth || auth !== process.env.TEACHER_PASSWORD) {
+      logAction({
+        actor: "ogretmen", action: "login_fail",
+        meta: { attempts: lockState.count },
+        ip, ua,
+      });
       return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
     }
 
@@ -150,6 +173,8 @@ export async function GET(request) {
     const items = await Permission.find({ gun, status: "beklemede" })
       .sort({ createdAt: 1 })
       .lean();
+
+    logAction({ actor: "ogretmen", actorRef: "teacher", action: "login_success", ip, ua });
 
     return NextResponse.json({ items, gun });
   } catch (e) {

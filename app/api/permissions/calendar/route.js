@@ -1,6 +1,6 @@
+// app/api/permissions/calendar/route.js
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/lib/mongodb";
-import Permission from "@/models/Permission";
+import { countByDayAcrossCollections } from "@/lib/permissionQuery";
 
 export const dynamic = "force-dynamic";
 
@@ -14,29 +14,7 @@ export async function GET(request) {
       );
     }
 
-    await dbConnect();
-    const days = await Permission.aggregate([
-      { $match: { gun: { $regex: `^${ay}-` } } },
-      {
-        $group: {
-          _id: "$gun",
-          count: { $sum: 1 },
-          approved: {
-            $sum: { $cond: [{ $eq: ["$status", "approved"] }, 1, 0] },
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          gun: "$_id",
-          count: 1,
-          approved: 1,
-        },
-      },
-      { $sort: { gun: 1 } },
-    ]);
-
+    const days = await countByDayAcrossCollections({ monthKey: ay });
     return NextResponse.json({ ay, days });
   } catch (e) {
     console.error("GET /api/permissions/calendar", e);

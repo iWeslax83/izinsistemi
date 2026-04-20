@@ -18,6 +18,7 @@ npm run dev
 | --- | --- |
 | `MONGODB_URI` | MongoDB bağlantı URI'si |
 | `TEACHER_PASSWORD` | Öğretmen paneli şifresi |
+| `CRON_SECRET` | `/api/cron/archive` endpoint'i için bearer token |
 
 ## Sayfalar
 
@@ -27,6 +28,8 @@ npm run dev
 - `/takvim` — Aylık takvim görünümü; güne tıklayınca o günün tüm talepleri listelenir.
 - `/ogretmen` — Öğretmen paneli (şifre korumalı). Günün bekleyen taleplerini listeler,
   toplu onay + PDF üretimi sunar.
+- `/ogretmen/log` — Audit log görüntüleyici (şifre korumalı). Öğrenci/öğretmen/sistem
+  eylemlerini filtreli listeler.
 
 ## Veri Modeli
 
@@ -56,6 +59,8 @@ Aynı öğrenci (okulNo) aynı gün birden fazla talep açamaz.
 | `GET` | `/api/permissions/history?okulNo=...` | Öğrencinin son 50 talebi |
 | `GET` | `/api/permissions/calendar?ay=YYYY-MM` | Ay bazında gün × talep sayısı |
 | `GET` | `/api/permissions/students?q=...` | Ad Soyad autocomplete kaynağı |
+| `GET` | `/api/admin/audit?actor=&action=&page=` | Audit log sorgulama (şifre korumalı) |
+| `POST/GET` | `/api/cron/archive` | 180 günden eski kayıtları arşive taşır (bearer auth) |
 
 ## PDF
 
@@ -72,6 +77,19 @@ dosyaları gömülür.
 
 Çevrimdışıyken gönderilen talep IndexedDB'ye yazılır; ağ dönünce `permission-sync`
 etiketiyle otomatik flush edilir.
+
+## Altyapı (Rate Limit / Audit / Arşiv)
+
+- **Rate limit:** `lib/rateLimit.js` — MongoDB tabanlı, TTL temizlikli. Atölye
+  WiFi için sadece dakika bazlı pencere kullanılır; günlük IP limiti yoktur.
+  Öğretmen şifresi rate limit'i bypass eder.
+- **Audit log:** `lib/audit.js` — öğrenci/öğretmen/sistem eylemleri, 365 gün TTL.
+  Panel: `/ogretmen/log`.
+- **Arşivleme:** `lib/archive.js` — 180 günden eski taleplerin ayrı
+  `permissionarchives` koleksiyonuna taşınması. Cron: `vercel.json`, günde bir
+  kez `CRON_SECRET` ile `/api/cron/archive` tetiklenir. Takvim/geçmiş sorguları
+  `lib/permissionQuery.js` ile aktif + arşiv üzerinden birleşik çalışır.
+- **Manuel test:** `docs/testing/infra-hardening.md`.
 
 ## İş Akışı
 

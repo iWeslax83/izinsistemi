@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { generatePermissionPdf } from "@/lib/pdf";
 
 export default function TeacherPanelPage() {
@@ -102,115 +103,167 @@ export default function TeacherPanelPage() {
   if (!authed) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
-        <form onSubmit={onLogin} className="card w-full max-w-sm p-8 space-y-4">
-          <h1 className="text-xl font-bold text-amber uppercase tracking-wider">
-            Öğretmen Girişi
-          </h1>
-          <input
-            type="password"
-            className="field-input"
-            placeholder="Şifre"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit" className="btn-amber w-full" disabled={loading}>
-            {loading ? "Doğrulanıyor..." : "Giriş"}
-          </button>
-          {error && <p className="text-sm text-red-400">{error}</p>}
-        </form>
+        <div className="w-full max-w-sm">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs text-ink-muted hover:text-ink mb-6"
+          >
+            ← ana sayfa
+          </Link>
+          <form onSubmit={onLogin} className="card p-7 space-y-4">
+            <div>
+              <p className="eyebrow mb-2">Öğretmen</p>
+              <h1 className="display text-2xl font-semibold">
+                Panele giriş
+              </h1>
+            </div>
+            <div>
+              <label className="field-label">Şifre</label>
+              <input
+                type="password"
+                className="field-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <button type="submit" className="btn-primary w-full" disabled={loading}>
+              {loading ? "Doğrulanıyor…" : "Giriş"}
+            </button>
+            {error && (
+              <div className="rounded-lg bg-danger-soft border border-danger/20 px-3 py-2.5 text-[13px] text-danger-ink">
+                {error}
+              </div>
+            )}
+          </form>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen px-4 py-10">
-      <div className="max-w-5xl mx-auto">
-        <header className="flex flex-wrap items-end justify-between mb-6 gap-4 border-b border-charcoal-600 pb-4">
+    <main className="min-h-screen">
+      <nav className="border-b border-line bg-paper/70 backdrop-blur">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="display text-[22px] font-bold leading-none">
+              atölye<span className="text-accent">.</span>
+            </span>
+            <span className="text-[11px] text-ink-muted tracking-wider uppercase">
+              Öğretmen
+            </span>
+          </Link>
+          <button
+            onClick={() => {
+              try {
+                sessionStorage.removeItem("teacher-pwd");
+              } catch {}
+              setAuthed(false);
+              setPassword("");
+            }}
+            className="btn-ghost"
+          >
+            Çıkış
+          </button>
+        </div>
+      </nav>
+
+      <div className="max-w-5xl mx-auto px-4 pt-10 pb-16">
+        <header className="flex flex-wrap items-end justify-between gap-6 mb-8">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-amber">
-              Öğretmen Paneli
-            </p>
-            <h1 className="text-2xl font-bold mt-1">Bekleyen İzin Talepleri</h1>
-            <p className="text-sm text-charcoal-400 mt-1">
-              Tarih: <span className="text-gray-200">{gun}</span>
+            <p className="eyebrow mb-3">Bekleyen Talepler</p>
+            <h1 className="display text-4xl font-semibold tracking-tight">
+              Günün talepleri
+            </h1>
+            <p className="text-sm text-ink-muted mt-2">
+              <span className="mark-number">{gun}</span> · {items.length} talep ·{" "}
+              {selected.size} seçili
             </p>
           </div>
           <div className="flex gap-2">
             <button
-              className="btn-ghost"
+              className="btn-secondary"
               onClick={() => fetchItems(password)}
               disabled={loading}
             >
               Yenile
             </button>
             <button
-              className="btn-amber"
+              className="btn-accent"
               onClick={onApprove}
               disabled={processing || selected.size === 0}
             >
               {processing
-                ? "İşleniyor..."
-                : `Onayla ve PDF Oluştur (${selected.size})`}
+                ? "İşleniyor…"
+                : `Onayla & PDF (${selected.size})`}
             </button>
           </div>
         </header>
 
         {error && (
-          <p className="mb-4 text-sm text-red-400 border border-red-500/30 bg-red-500/10 rounded-md p-3">
+          <div className="mb-5 rounded-lg bg-danger-soft border border-danger/20 px-3 py-2.5 text-[13px] text-danger-ink">
             {error}
-          </p>
+          </div>
         )}
 
         <div className="card overflow-hidden">
           {loading ? (
-            <p className="p-6 text-center text-charcoal-400">Yükleniyor...</p>
+            <p className="p-12 text-center text-ink-muted text-sm">Yükleniyor…</p>
           ) : items.length === 0 ? (
-            <p className="p-6 text-center text-charcoal-400">
+            <p className="p-12 text-center text-ink-muted text-sm">
               Bugün için bekleyen talep yok.
             </p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-charcoal-700 text-amber uppercase text-xs tracking-wider">
-                <tr>
-                  <th className="p-3 text-left">
+              <thead>
+                <tr className="text-[11px] text-ink-muted uppercase tracking-wider border-b border-line bg-paper">
+                  <th className="p-3 text-left w-10">
                     <input
                       type="checkbox"
                       checked={selected.size === items.length}
                       onChange={toggleAll}
-                      className="accent-amber w-4 h-4"
+                      className="accent-accent w-4 h-4"
                     />
                   </th>
-                  <th className="p-3 text-left">Ad Soyad</th>
-                  <th className="p-3 text-left">Okul No</th>
-                  <th className="p-3 text-left">Sınıf</th>
-                  <th className="p-3 text-left">Ders Aralığı</th>
-                  <th className="p-3 text-left">Saat</th>
+                  <th className="p-3 text-left font-medium">Ad Soyad</th>
+                  <th className="p-3 text-left font-medium">Okul No</th>
+                  <th className="p-3 text-left font-medium">Sınıf</th>
+                  <th className="p-3 text-left font-medium">Dersler</th>
+                  <th className="p-3 text-left font-medium">Neden</th>
+                  <th className="p-3 text-left font-medium">Saat</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((i) => (
                   <tr
                     key={i._id}
-                    className="border-t border-charcoal-600 hover:bg-charcoal-700/50"
+                    className="border-b border-line/60 last:border-0 hover:bg-paper"
                   >
                     <td className="p-3">
                       <input
                         type="checkbox"
                         checked={selected.has(i._id)}
                         onChange={() => toggle(i._id)}
-                        className="accent-amber w-4 h-4"
+                        className="accent-accent w-4 h-4"
                       />
                     </td>
-                    <td className="p-3">{i.adSoyad}</td>
-                    <td className="p-3">{i.okulNo}</td>
-                    <td className="p-3">
+                    <td className="p-3 font-medium">{i.adSoyad}</td>
+                    <td className="p-3 text-ink-muted mark-number">{i.okulNo}</td>
+                    <td className="p-3 text-ink-muted">
                       {i.sinif}-{i.sube}
                     </td>
-                    <td className="p-3">
+                    <td className="p-3 text-ink-muted">
                       {i.baslangicDersi}. - {i.bitisDersi}.
                     </td>
-                    <td className="p-3 text-charcoal-400">
+                    <td
+                      className="p-3 text-ink-muted max-w-[20rem] truncate"
+                      title={i.neden}
+                    >
+                      {i.neden}
+                    </td>
+                    <td className="p-3 text-ink-muted mark-number">
                       {new Date(i.createdAt).toLocaleTimeString("tr-TR", {
                         hour: "2-digit",
                         minute: "2-digit",

@@ -1,18 +1,47 @@
+import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
+import ServiceWorkerRegister from "./sw-register";
+
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-fraunces",
+  axes: ["opsz", "SOFT"],
+});
 
 export const metadata = {
-  title: "Atölye İzin Sistemi",
+  title: "Atölye İzin",
   description: "TOFAŞ Fen Lisesi İnovasyon Atölyesi izin otomasyonu",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Atölye İzin",
+  },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
+};
+
+export const viewport = {
+  themeColor: "#f59e0b",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="tr">
-      <body
-        className="min-h-screen bg-charcoal-900 text-gray-100"
-        suppressHydrationWarning
-      >
+    <html lang="tr" className={`${inter.variable} ${fraunces.variable}`}>
+      <body className="min-h-screen bg-bg text-ink" suppressHydrationWarning>
         {children}
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

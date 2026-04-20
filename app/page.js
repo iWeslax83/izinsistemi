@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { countQueue, enqueuePermission, requestSync } from "@/lib/offlineQueue";
 
 const SINIFLAR = [9, 10, 11, 12];
 const SUBELER = ["A", "B", "C", "D", "E", "F", "G"];
@@ -14,6 +16,7 @@ export default function StudentFormPage() {
     sube: "",
     baslangicDersi: "",
     bitisDersi: "",
+    neden: "",
   });
   const [status, setStatus] = useState({ state: "idle", msg: "" });
   const [list, setList] = useState([]);
@@ -21,6 +24,9 @@ export default function StudentFormPage() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const [online, setOnline] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const suggestionsRef = useRef(null);
   const debounceRef = useRef(null);
 
@@ -48,6 +54,39 @@ export default function StudentFormPage() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    setMounted(true);
+    setOnline(navigator.onLine);
+    const refreshCount = async () => setPendingCount(await countQueue());
+    refreshCount();
+
+    const onOnline = () => {
+      setOnline(true);
+      requestSync();
+    };
+    const onOffline = () => setOnline(false);
+    const onSwMessage = (e) => {
+      if (e.data && e.data.type === "queue-flushed") {
+        refreshCount();
+        fetchList();
+      }
+    };
+
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", onSwMessage);
+    }
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.removeEventListener("message", onSwMessage);
+      }
+    };
   }, []);
 
   const fetchSuggestions = (query) => {
@@ -106,9 +145,37 @@ export default function StudentFormPage() {
     }
   };
 
+  const resetForm = () =>
+    setForm({
+      adSoyad: "",
+      okulNo: "",
+      sinif: "",
+      sube: "",
+      baslangicDersi: "",
+      bitisDersi: "",
+      neden: "",
+    });
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setStatus({ state: "loading", msg: "" });
+
+    if (!navigator.onLine) {
+      try {
+        await enqueuePermission(form);
+        await requestSync();
+        setPendingCount(await countQueue());
+        setStatus({
+          state: "success",
+          msg: "Çevrimdışısınız. Talebiniz bağlantı kurulunca otomatik gönderilecek.",
+        });
+        resetForm();
+      } catch (err) {
+        setStatus({ state: "error", msg: "Talep kaydedilemedi." });
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/permissions", {
         method: "POST",
@@ -121,14 +188,7 @@ export default function StudentFormPage() {
         state: "success",
         msg: "Talebiniz alındı. İyi çalışmalar!",
       });
-      setForm({
-        adSoyad: "",
-        okulNo: "",
-        sinif: "",
-        sube: "",
-        baslangicDersi: "",
-        bitisDersi: "",
-      });
+      resetForm();
       fetchList();
     } catch (err) {
       setStatus({ state: "error", msg: err.message });
@@ -136,232 +196,288 @@ export default function StudentFormPage() {
   };
 
   return (
-    <main className="min-h-screen px-4 py-10">
-      <div className="max-w-5xl mx-auto grid lg:grid-cols-5 gap-6">
-        <div className="card lg:col-span-2 p-8 h-fit">
-        <header className="mb-8 border-b border-charcoal-600 pb-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-amber">
-            TOFAŞ FEN LİSESİ
-          </p>
-          <h1 className="text-2xl mt-1 font-bold text-gray-100">
-            İnovasyon Atölyesi İzin Formu
+    <main className="min-h-screen">
+      <nav className="border-b border-line bg-paper/70 backdrop-blur">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="display text-[22px] font-bold leading-none">
+              atölye<span className="text-accent">.</span>
+            </span>
+            <span className="text-[11px] text-ink-muted tracking-wider uppercase">
+              İzin Sistemi
+            </span>
+          </Link>
+          <div className="flex items-center gap-4 text-sm">
+            <Link href="/gecmis" className="text-ink-muted hover:text-ink transition">
+              Geçmişim
+            </Link>
+            <Link href="/takvim" className="text-ink-muted hover:text-ink transition">
+              Takvim
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-5xl mx-auto px-4 pt-10 pb-16">
+        <header className="mb-10 max-w-2xl">
+          <p className="eyebrow mb-3">TOFAŞ Fen Lisesi · İnovasyon Atölyesi</p>
+          <h1 className="display text-4xl sm:text-5xl font-semibold leading-[1.05] tracking-tight">
+            Atölyede olduğunu,
+            <br />
+            <span className="italic text-accent">yoklamaya söyle.</span>
           </h1>
-          <p className="text-sm text-charcoal-400 mt-2">
-            Yoklamada yok yazılmaması için talebinizi iletin.
+          <p className="mt-4 text-[15px] text-ink-muted leading-relaxed max-w-lg">
+            Yoklamada yok yazılmaman için talebini aşağıdan ilet. Öğretmen
+            onayladıktan sonra idareye iletilir.
           </p>
         </header>
 
-        <form onSubmit={onSubmit} className="space-y-5">
-          <div className="relative" ref={suggestionsRef}>
-            <label className="field-label">Ad Soyad</label>
-            <input
-              className="field-input"
-              name="adSoyad"
-              value={form.adSoyad}
-              onChange={onChange}
-              onKeyDown={onAdSoyadKeyDown}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              placeholder="Ör: Ahmet Yılmaz"
-              autoComplete="off"
-              required
-            />
-            {showSuggestions && (
-              <ul className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-charcoal-600 bg-charcoal-800 shadow-lg">
-                {suggestions.map((s, idx) => (
-                  <li
-                    key={`${s.adSoyad}-${s.okulNo}`}
-                    className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer text-sm transition-colors ${
-                      idx === activeSuggestion
-                        ? "bg-amber/20 text-amber"
-                        : "text-gray-200 hover:bg-charcoal-700"
-                    }`}
-                    onMouseDown={() => selectSuggestion(s)}
-                    onMouseEnter={() => setActiveSuggestion(idx)}
-                  >
-                    <span className="font-medium truncate">{s.adSoyad}</span>
-                    <span className="text-xs text-charcoal-400 whitespace-nowrap">
-                      {s.sinif}-{s.sube} | No: {s.okulNo}
+        <div className="grid lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-5">
+            <div className="card p-6 sm:p-7">
+              <form onSubmit={onSubmit} className="space-y-4">
+                {mounted && !online && (
+                  <div className="rounded-lg bg-warn-soft border border-warn/20 px-3 py-2.5 text-[13px] text-warn-ink">
+                    Çevrimdışısın. Talep sıraya alınır, bağlantı gelince gönderilir.
+                  </div>
+                )}
+                {mounted && pendingCount > 0 && (
+                  <div className="rounded-lg bg-accent-soft border border-accent/20 px-3 py-2.5 text-[13px] text-warn-ink">
+                    {pendingCount} talep gönderilmek üzere sırada.
+                  </div>
+                )}
+
+                <div className="relative" ref={suggestionsRef}>
+                  <label className="field-label">Ad Soyad</label>
+                  <input
+                    className="field-input"
+                    name="adSoyad"
+                    value={form.adSoyad}
+                    onChange={onChange}
+                    onKeyDown={onAdSoyadKeyDown}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    placeholder="Ahmet Yılmaz"
+                    autoComplete="off"
+                    required
+                  />
+                  {showSuggestions && (
+                    <ul className="absolute z-50 left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-line bg-surface shadow-pop py-1">
+                      {suggestions.map((s, idx) => (
+                        <li
+                          key={`${s.adSoyad}-${s.okulNo}`}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 mx-1 cursor-pointer text-sm transition-colors rounded-lg ${
+                            idx === activeSuggestion
+                              ? "bg-accent-soft"
+                              : "hover:bg-bg"
+                          }`}
+                          onMouseDown={() => selectSuggestion(s)}
+                          onMouseEnter={() => setActiveSuggestion(idx)}
+                        >
+                          <span className="font-medium truncate">{s.adSoyad}</span>
+                          <span className="text-[11px] text-ink-muted whitespace-nowrap">
+                            {s.sinif}-{s.sube} · {s.okulNo}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <label className="field-label">Okul No</label>
+                  <input
+                    className="field-input"
+                    name="okulNo"
+                    value={form.okulNo}
+                    onChange={onChange}
+                    placeholder="1234"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="field-label">Sınıf</label>
+                    <select
+                      className="field-input"
+                      name="sinif"
+                      value={form.sinif}
+                      onChange={onChange}
+                      required
+                    >
+                      <option value="">—</option>
+                      {SINIFLAR.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="field-label">Şube</label>
+                    <select
+                      className="field-input"
+                      name="sube"
+                      value={form.sube}
+                      onChange={onChange}
+                      required
+                    >
+                      <option value="">—</option>
+                      {SUBELER.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="field-label">Başlangıç</label>
+                    <select
+                      className="field-input"
+                      name="baslangicDersi"
+                      value={form.baslangicDersi}
+                      onChange={onChange}
+                      required
+                    >
+                      <option value="">—</option>
+                      {DERSLER.map((d) => (
+                        <option key={d} value={d}>
+                          {d}. ders
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="field-label">Bitiş</label>
+                    <select
+                      className="field-input"
+                      name="bitisDersi"
+                      value={form.bitisDersi}
+                      onChange={onChange}
+                      required
+                    >
+                      <option value="">—</option>
+                      {DERSLER.map((d) => (
+                        <option key={d} value={d}>
+                          {d}. ders
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="field-label flex items-center justify-between">
+                    <span>Neden</span>
+                    <span className="text-[11px] text-ink-soft font-normal mark-number">
+                      {form.neden.length}/200
                     </span>
+                  </label>
+                  <textarea
+                    className="field-input resize-none"
+                    name="neden"
+                    value={form.neden}
+                    onChange={onChange}
+                    placeholder="İzin nedenini kısaca açıkla"
+                    rows={3}
+                    maxLength={200}
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-primary w-full mt-2"
+                  disabled={status.state === "loading"}
+                >
+                  {status.state === "loading" ? "Gönderiliyor…" : "Talebi gönder"}
+                </button>
+
+                {status.state === "success" && (
+                  <div className="rounded-lg bg-ok-soft border border-ok/20 px-3 py-2.5 text-[13px] text-ok-ink">
+                    {status.msg}
+                  </div>
+                )}
+                {status.state === "error" && (
+                  <div className="rounded-lg bg-danger-soft border border-danger/20 px-3 py-2.5 text-[13px] text-danger-ink">
+                    {status.msg}
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
+
+          <section className="lg:col-span-7">
+            <div className="flex items-baseline justify-between mb-5 pb-3 border-b border-line">
+              <div className="flex items-baseline gap-3">
+                <h2 className="display text-2xl font-semibold">Bugün</h2>
+                <span className="text-ink-muted text-sm">
+                  {list.length} talep
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={fetchList}
+                className="btn-ghost"
+                disabled={listLoading}
+              >
+                {listLoading ? "…" : "Yenile"}
+              </button>
+            </div>
+
+            {listLoading && list.length === 0 ? (
+              <p className="text-sm text-ink-muted py-12 text-center">
+                Yükleniyor…
+              </p>
+            ) : list.length === 0 ? (
+              <div className="py-16 text-center">
+                <p className="text-sm text-ink-muted">
+                  Henüz kimse atölyede değil.
+                </p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-line">
+                {list.map((i, idx) => (
+                  <li
+                    key={i._id}
+                    className="flex items-center gap-4 py-3 group"
+                  >
+                    <span className="mark-number text-xs text-ink-soft w-6 tabular-nums">
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{i.adSoyad}</p>
+                      <p className="text-xs text-ink-muted mt-0.5">
+                        {i.sinif}-{i.sube} · {i.baslangicDersi}. - {i.bitisDersi}. ders
+                      </p>
+                      {i.neden && (
+                        <p className="text-xs text-ink-soft mt-1 italic truncate">
+                          “{i.neden}”
+                        </p>
+                      )}
+                    </div>
+                    {i.status === "approved" ? (
+                      <span className="badge-ok">onaylandı</span>
+                    ) : (
+                      <span className="badge-warn">beklemede</span>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
-          </div>
-
-          <div>
-            <label className="field-label">Okul No</label>
-            <input
-              className="field-input"
-              name="okulNo"
-              value={form.okulNo}
-              onChange={onChange}
-              placeholder="1234"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="field-label">Sınıf</label>
-              <select
-                className="field-input"
-                name="sinif"
-                value={form.sinif}
-                onChange={onChange}
-                required
-              >
-                <option value="">Seçiniz</option>
-                {SINIFLAR.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="field-label">Şube</label>
-              <select
-                className="field-input"
-                name="sube"
-                value={form.sube}
-                onChange={onChange}
-                required
-              >
-                <option value="">Seçiniz</option>
-                {SUBELER.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="field-label">Başlangıç Dersi</label>
-              <select
-                className="field-input"
-                name="baslangicDersi"
-                value={form.baslangicDersi}
-                onChange={onChange}
-                required
-              >
-                <option value="">Seçiniz</option>
-                {DERSLER.map((d) => (
-                  <option key={d} value={d}>
-                    {d}. Ders
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="field-label">Bitiş Dersi</label>
-              <select
-                className="field-input"
-                name="bitisDersi"
-                value={form.bitisDersi}
-                onChange={onChange}
-                required
-              >
-                <option value="">Seçiniz</option>
-                {DERSLER.map((d) => (
-                  <option key={d} value={d}>
-                    {d}. Ders
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="btn-amber w-full"
-            disabled={status.state === "loading"}
-          >
-            {status.state === "loading" ? "Gönderiliyor..." : "Talebi Gönder"}
-          </button>
-
-          {status.state === "success" && (
-            <p className="text-sm text-green-400 text-center">{status.msg}</p>
-          )}
-          {status.state === "error" && (
-            <p className="text-sm text-red-400 text-center">{status.msg}</p>
-          )}
-        </form>
+          </section>
         </div>
-
-        <section className="card lg:col-span-3 p-6">
-          <div className="flex items-center justify-between mb-4 border-b border-charcoal-600 pb-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-amber">
-                Bugünkü Talepler
-              </p>
-              <h2 className="text-lg font-bold mt-1">
-                İnovasyon Atölyesi Listesi
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={fetchList}
-              className="btn-ghost text-xs"
-              disabled={listLoading}
-            >
-              {listLoading ? "Yükleniyor..." : "Yenile"}
-            </button>
-          </div>
-
-          {listLoading && list.length === 0 ? (
-            <p className="text-sm text-charcoal-400 py-8 text-center">
-              Yükleniyor...
-            </p>
-          ) : list.length === 0 ? (
-            <p className="text-sm text-charcoal-400 py-8 text-center">
-              Bugün henüz talep yok.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-amber uppercase text-xs tracking-wider">
-                  <tr className="border-b border-charcoal-600">
-                    <th className="p-2 text-left">Ad Soyad</th>
-                    <th className="p-2 text-left">Sınıf</th>
-                    <th className="p-2 text-left">Dersler</th>
-                    <th className="p-2 text-left">Durum</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.map((i) => (
-                    <tr
-                      key={i._id}
-                      className="border-b border-charcoal-700/50 hover:bg-charcoal-700/30"
-                    >
-                      <td className="p-2">{i.adSoyad}</td>
-                      <td className="p-2">
-                        {i.sinif}-{i.sube}
-                      </td>
-                      <td className="p-2 text-charcoal-400">
-                        {i.baslangicDersi}. - {i.bitisDersi}.
-                      </td>
-                      <td className="p-2">
-                        {i.status === "approved" ? (
-                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/30">
-                            Onaylandı
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber/10 text-amber border border-amber/30">
-                            Beklemede
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
       </div>
+
+      <footer className="border-t border-line mt-10">
+        <div className="max-w-5xl mx-auto px-4 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-muted">
+          <span>TOFAŞ Fen Lisesi İnovasyon Atölyesi</span>
+          <span className="mark-number">© 2026</span>
+        </div>
+      </footer>
     </main>
   );
 }

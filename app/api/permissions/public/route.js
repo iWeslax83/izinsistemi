@@ -5,12 +5,16 @@ import { todayKey } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const requested = request.nextUrl.searchParams.get("gun");
+    const gun = requested && /^\d{4}-\d{2}-\d{2}$/.test(requested)
+      ? requested
+      : todayKey();
+
     await dbConnect();
-    const gun = todayKey();
     const items = await Permission.find({ gun })
-      .select("adSoyad sinif sube baslangicDersi bitisDersi status createdAt")
+      .select("adSoyad sinif sube baslangicDersi bitisDersi neden status createdAt")
       .sort({ createdAt: 1 })
       .lean();
 

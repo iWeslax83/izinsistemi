@@ -6,7 +6,7 @@ import { todayKey } from "@/lib/date";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { adSoyad, okulNo, sinif, sube, baslangicDersi, bitisDersi } = body;
+    const { adSoyad, okulNo, sinif, sube, baslangicDersi, bitisDersi, neden } = body;
 
     if (
       !adSoyad ||
@@ -14,10 +14,20 @@ export async function POST(request) {
       !sinif ||
       !sube ||
       !baslangicDersi ||
-      !bitisDersi
+      !bitisDersi ||
+      !neden ||
+      !String(neden).trim()
     ) {
       return NextResponse.json(
         { error: "Tüm alanların doldurulması zorunludur." },
+        { status: 400 }
+      );
+    }
+
+    const nedenTrim = String(neden).trim();
+    if (nedenTrim.length > 200) {
+      return NextResponse.json(
+        { error: "Neden en fazla 200 karakter olabilir." },
         { status: 400 }
       );
     }
@@ -30,14 +40,26 @@ export async function POST(request) {
     }
 
     await dbConnect();
+
+    const okulNoTrim = String(okulNo).trim();
+    const gun = todayKey();
+    const existing = await Permission.findOne({ okulNo: okulNoTrim, gun }).lean();
+    if (existing) {
+      return NextResponse.json(
+        { error: "Bugün zaten bir talebiniz bulunuyor." },
+        { status: 409 }
+      );
+    }
+
     const doc = await Permission.create({
       adSoyad: String(adSoyad).trim(),
-      okulNo: String(okulNo).trim(),
+      okulNo: okulNoTrim,
       sinif: Number(sinif),
       sube: String(sube).toUpperCase(),
       baslangicDersi: Number(baslangicDersi),
       bitisDersi: Number(bitisDersi),
-      gun: todayKey(),
+      neden: nedenTrim,
+      gun,
       status: "beklemede",
     });
 

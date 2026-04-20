@@ -17,6 +17,7 @@ const PermissionSchema = new mongoose.Schema(
     },
     baslangicDersi: { type: Number, required: true, min: 1, max: 10 },
     bitisDersi: { type: Number, required: true, min: 1, max: 10 },
+    neden: { type: String, required: true, trim: true, maxlength: 200 },
     status: {
       type: String,
       enum: ["beklemede", "approved"],

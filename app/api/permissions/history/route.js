@@ -1,6 +1,6 @@
+// app/api/permissions/history/route.js
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/lib/mongodb";
-import Permission from "@/models/Permission";
+import { findAcrossCollections } from "@/lib/permissionQuery";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +14,12 @@ export async function GET(request) {
       );
     }
 
-    await dbConnect();
-    const items = await Permission.find({ okulNo })
-      .select("adSoyad okulNo sinif sube baslangicDersi bitisDersi neden status gun createdAt")
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .lean();
+    const items = await findAcrossCollections({
+      filter: { okulNo },
+      projection: "adSoyad okulNo sinif sube baslangicDersi bitisDersi neden status gun createdAt",
+      sort: { createdAt: -1 },
+      limit: 50,
+    });
 
     return NextResponse.json({ items });
   } catch (e) {

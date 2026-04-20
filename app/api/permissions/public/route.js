@@ -1,6 +1,6 @@
+// app/api/permissions/public/route.js
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/lib/mongodb";
-import Permission from "@/models/Permission";
+import { findAcrossCollections } from "@/lib/permissionQuery";
 import { todayKey } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +12,12 @@ export async function GET(request) {
       ? requested
       : todayKey();
 
-    await dbConnect();
-    const items = await Permission.find({ gun })
-      .select("adSoyad sinif sube baslangicDersi bitisDersi neden status createdAt")
-      .sort({ createdAt: 1 })
-      .lean();
+    const items = await findAcrossCollections({
+      filter: { gun },
+      projection: "adSoyad sinif sube baslangicDersi bitisDersi neden status createdAt",
+      sort: { createdAt: 1 },
+      limit: 500,
+    });
 
     return NextResponse.json({ items, gun });
   } catch (e) {

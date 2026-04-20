@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import Permission from "@/models/Permission";
+import { logAction } from "@/lib/audit";
+import { extractIp, extractUa } from "@/lib/clientInfo";
 
 export async function POST(request) {
+  const ip = extractIp(request);
+  const ua = extractUa(request);
   try {
     const auth = request.headers.get("x-teacher-password");
     if (!auth || auth !== process.env.TEACHER_PASSWORD) {
@@ -22,6 +26,14 @@ export async function POST(request) {
       { _id: { $in: ids }, status: "beklemede" },
       { $set: { status: "approved" } }
     );
+
+    logAction({
+      actor: "ogretmen",
+      actorRef: "teacher",
+      action: "approve",
+      meta: { ids, count: res.modifiedCount },
+      ip, ua,
+    });
 
     return NextResponse.json({ ok: true, modified: res.modifiedCount });
   } catch (e) {

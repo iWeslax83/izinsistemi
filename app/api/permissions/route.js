@@ -5,14 +5,14 @@ import { todayKey } from "@/lib/date";
 import { hitBucket, hitDistinctBucket, rateLimitResponse, clearBucketsWithPrefix } from "@/lib/rateLimit";
 import { logAction } from "@/lib/audit";
 import { extractIp, extractUa, getOrCreateSid } from "@/lib/clientInfo";
+import { verifyTeacherPassword } from "@/lib/auth";
 
 export async function POST(request) {
   const ip = extractIp(request);
   const ua = extractUa(request);
   const { sid } = getOrCreateSid();
 
-  const teacherBypass =
-    request.headers.get("x-teacher-password") === process.env.TEACHER_PASSWORD;
+  const teacherBypass = verifyTeacherPassword(request);
 
   if (!teacherBypass) {
     const perIp = await hitBucket({
@@ -146,11 +146,15 @@ export async function GET(request) {
     key: `teacher-lock:ip:${ip}`,
     limit: 5,
     windowSec: 300,
+    failClosed: true,
   });
   if (!lockState.ok) {
     logAction({
       actor: "ogretmen", action: "login_locked",
-      meta: { until: new Date(Date.now() + lockState.retryAfter * 1000) },
+      meta: {
+        until: new Date(Date.now() + lockState.retryAfter * 1000),
+        reason: lockState.failClosed ? "db_unavailable" : "too_many_attempts",
+      },
       ip, ua,
     });
     const r = rateLimitResponse(lockState, "Çok fazla başarısız giriş.");
@@ -158,8 +162,7 @@ export async function GET(request) {
   }
 
   try {
-    const auth = request.headers.get("x-teacher-password");
-    if (!auth || auth !== process.env.TEACHER_PASSWORD) {
+    if (!verifyTeacherPassword(request)) {
       logAction({
         actor: "ogretmen", action: "login_fail",
         meta: { attempts: lockState.count },

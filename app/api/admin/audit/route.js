@@ -2,14 +2,14 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import AuditLog from "@/models/AuditLog";
+import { verifyTeacherPassword } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
 export async function GET(request) {
-  const auth = request.headers.get("x-teacher-password");
-  if (!auth || auth !== process.env.TEACHER_PASSWORD) {
+  if (!verifyTeacherPassword(request)) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 

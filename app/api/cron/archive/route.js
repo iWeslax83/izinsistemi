@@ -1,18 +1,11 @@
 // app/api/cron/archive/route.js
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { runArchive } from "@/lib/archive";
 import { logAction } from "@/lib/audit";
+import { safeEqual } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
-
-function safeEqual(a, b) {
-  const aBuf = Buffer.from(a);
-  const bBuf = Buffer.from(b);
-  if (aBuf.length !== bBuf.length) return false;
-  return crypto.timingSafeEqual(aBuf, bBuf);
-}
 
 export async function POST(request) {
   const auth = request.headers.get("authorization") || "";

@@ -3,13 +3,16 @@ import { dbConnect } from "@/lib/mongodb";
 import Permission from "@/models/Permission";
 import { logAction } from "@/lib/audit";
 import { extractIp, extractUa } from "@/lib/clientInfo";
+import { verifyTeacherPassword, isSameOrigin } from "@/lib/auth";
 
 export async function POST(request) {
   const ip = extractIp(request);
   const ua = extractUa(request);
   try {
-    const auth = request.headers.get("x-teacher-password");
-    if (!auth || auth !== process.env.TEACHER_PASSWORD) {
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+    }
+    if (!verifyTeacherPassword(request)) {
       return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
     }
 

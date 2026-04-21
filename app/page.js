@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { countQueue, enqueuePermission, requestSync } from "@/lib/offlineQueue";
 
 const SINIFLAR = [9, 10, 11, 12];
@@ -200,9 +201,6 @@ export default function StudentFormPage() {
       <nav className="border-b border-line bg-paper/70 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="display text-[22px] font-bold leading-none">
-              atölye<span className="text-accent">.</span>
-            </span>
             <span className="text-[11px] text-ink-muted tracking-wider uppercase">
               İzin Sistemi
             </span>

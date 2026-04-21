@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import Permission from "@/models/Permission";
+import { escapeRegex } from "@/lib/auth";
 
 export async function GET(request) {
   try {
     const q = request.nextUrl.searchParams.get("q") || "";
-    if (q.length < 2) {
+    if (q.length < 2 || q.length > 50) {
       return NextResponse.json({ students: [] });
     }
 
@@ -14,7 +15,7 @@ export async function GET(request) {
     const students = await Permission.aggregate([
       {
         $match: {
-          adSoyad: { $regex: q, $options: "i" },
+          adSoyad: { $regex: escapeRegex(q), $options: "i" },
         },
       },
       { $sort: { createdAt: -1 } },

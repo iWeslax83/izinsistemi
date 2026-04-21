@@ -149,13 +149,6 @@ export default function TeacherPanelPage() {
       <nav className="border-b border-line bg-paper/70 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image
-              src="/icon-192.png"
-              alt="atölye"
-              width={32}
-              height={32}
-              className="h-8 w-8"
-            />
             <span className="text-[11px] text-ink-muted tracking-wider uppercase">
               Öğretmen
             </span>

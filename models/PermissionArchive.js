@@ -9,7 +9,7 @@ const PermissionArchiveSchema = new mongoose.Schema(
     sube: {
       type: String,
       required: true,
-      enum: ["A", "B", "C", "D", "E", "F", "G"],
+      enum: ["A", "B", "C", "D"],
     },
     baslangicDersi: { type: Number, required: true, min: 1, max: 10 },
     bitisDersi: { type: Number, required: true, min: 1, max: 10 },

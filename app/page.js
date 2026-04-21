@@ -6,7 +6,7 @@ import Image from "next/image";
 import { countQueue, enqueuePermission, requestSync } from "@/lib/offlineQueue";
 
 const SINIFLAR = [9, 10, 11, 12];
-const SUBELER = ["A", "B", "C", "D", "E", "F", "G"];
+const SUBELER = ["A", "B", "C", "D"];
 const DERSLER = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function StudentFormPage() {

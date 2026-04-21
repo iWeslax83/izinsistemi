@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import Permission from "@/models/Permission";
 import { todayKey } from "@/lib/date";
-import { hitBucket, hitDistinctBucket, rateLimitResponse } from "@/lib/rateLimit";
+import { hitBucket, hitDistinctBucket, rateLimitResponse, clearBucketsWithPrefix } from "@/lib/rateLimit";
 import { logAction } from "@/lib/audit";
 import { extractIp, extractUa, getOrCreateSid } from "@/lib/clientInfo";
 
@@ -174,6 +174,7 @@ export async function GET(request) {
       .sort({ createdAt: 1 })
       .lean();
 
+    await clearBucketsWithPrefix(`teacher-lock:ip:${ip}`);
     logAction({ actor: "ogretmen", actorRef: "teacher", action: "login_success", ip, ua });
 
     return NextResponse.json({ items, gun });

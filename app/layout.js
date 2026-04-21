@@ -46,6 +46,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen bg-bg text-ink" suppressHydrationWarning>
         {children}
         <ServiceWorkerRegister />
+        <Analytics />
       </body>
     </html>
   );

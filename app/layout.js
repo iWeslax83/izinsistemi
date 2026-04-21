@@ -1,6 +1,7 @@
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "./sw-register";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],

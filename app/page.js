@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { countQueue, enqueuePermission, requestSync } from "@/lib/offlineQueue";
+import { Analytics } from "@vercel/analytics/next";
 
 const SINIFLAR = [9, 10, 11, 12];
 const SUBELER = ["A", "B", "C", "D"];

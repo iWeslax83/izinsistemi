@@ -40,7 +40,7 @@ npm run dev
 | `adSoyad` | String | Zorunlu |
 | `okulNo` | String | Zorunlu |
 | `sinif` | Number | 9–12 |
-| `sube` | String | A–G |
+| `sube` | String | A–D |
 | `baslangicDersi` / `bitisDersi` | Number | 1–10 |
 | `neden` | String | Zorunlu, maks 200 karakter |
 | `gun` | String | `YYYY-MM-DD` |

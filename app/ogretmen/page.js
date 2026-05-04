@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { generatePermissionPdf } from "@/lib/pdf";
+
+const REFRESH_INTERVAL_MS = 30_000;
 
 export default function TeacherPanelPage() {
   const [password, setPassword] = useState("");
@@ -14,28 +15,96 @@ export default function TeacherPanelPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
+  const prevIdsRef = useRef(new Set());
+  const authedRef = useRef(false);
 
-  const fetchItems = async (pwd) => {
-    setLoading(true);
-    setError("");
+  useEffect(() => {
+    authedRef.current = authed;
+  }, [authed]);
+
+  const fetchItems = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    if (!silent) setError("");
     try {
       const res = await fetch("/api/permissions", {
-        headers: { "x-teacher-password": pwd },
+        credentials: "same-origin",
+        cache: "no-store",
       });
       if (res.status === 401) {
         setAuthed(false);
-        setError("Şifre hatalı.");
         return;
       }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Liste alınamadı");
-      setItems(data.items || []);
+      const newItems = data.items || [];
+      const prevIds = prevIdsRef.current;
+      prevIdsRef.current = new Set(newItems.map((i) => i._id));
+      setItems(newItems);
       setGun(data.gun);
-      setSelected(new Set((data.items || []).map((i) => i._id)));
+      if (silent) {
+        setSelected((prev) => {
+          const next = new Set();
+          for (const item of newItems) {
+            if (prevIds.has(item._id)) {
+              if (prev.has(item._id)) next.add(item._id);
+            } else {
+              next.add(item._id);
+            }
+          }
+          return next;
+        });
+      } else {
+        setSelected(new Set(newItems.map((i) => i._id)));
+      }
       setAuthed(true);
-      try {
-        sessionStorage.setItem("teacher-pwd", pwd);
-      } catch {}
+    } catch (e) {
+      if (!silent) setError(e.message);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const tick = () => {
+      if (
+        authedRef.current &&
+        document.visibilityState === "visible" &&
+        navigator.onLine
+      ) {
+        fetchItems({ silent: true });
+      }
+    };
+    const interval = setInterval(tick, REFRESH_INTERVAL_MS);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, []);
+
+  const onLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ password, role: "teacher" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Giriş yapılamadı.");
+        return;
+      }
+      setPassword("");
+      await fetchItems();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -43,19 +112,13 @@ export default function TeacherPanelPage() {
     }
   };
 
-  useEffect(() => {
+  const onLogout = async () => {
     try {
-      const saved = sessionStorage.getItem("teacher-pwd");
-      if (saved) {
-        setPassword(saved);
-        fetchItems(saved);
-      }
+      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
     } catch {}
-  }, []);
-
-  const onLogin = (e) => {
-    e.preventDefault();
-    fetchItems(password);
+    setAuthed(false);
+    setItems([]);
+    setSelected(new Set());
   };
 
   const toggle = (id) => {
@@ -84,16 +147,17 @@ export default function TeacherPanelPage() {
 
       const res = await fetch("/api/permissions/approve", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-teacher-password": password,
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ ids }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Onay hatası");
+      if (!res.ok) {
+        if (res.status === 401) setAuthed(false);
+        throw new Error(data.error || "Onay hatası");
+      }
 
-      await fetchItems(password);
+      await fetchItems();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -147,33 +211,26 @@ export default function TeacherPanelPage() {
   return (
     <main className="min-h-screen">
       <nav className="border-b border-line bg-paper/70 backdrop-blur">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="text-[11px] text-ink-muted tracking-wider uppercase">
               Öğretmen
             </span>
           </Link>
-          <Link href="/ogretmen/log" className="btn-ghost">Log</Link>
-          <button
-            onClick={() => {
-              try {
-                sessionStorage.removeItem("teacher-pwd");
-              } catch {}
-              setAuthed(false);
-              setPassword("");
-            }}
-            className="btn-ghost"
-          >
-            Çıkış
-          </button>
+          <div className="flex items-center gap-1">
+            <Link href="/ogretmen/log" className="btn-ghost">Log</Link>
+            <button onClick={onLogout} className="btn-ghost">
+              Çıkış
+            </button>
+          </div>
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-4 pt-10 pb-16">
-        <header className="flex flex-wrap items-end justify-between gap-6 mb-8">
+      <div className="max-w-5xl mx-auto px-4 pt-6 sm:pt-10 pb-16">
+        <header className="flex flex-wrap items-end justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div>
             <p className="eyebrow mb-3">Bekleyen Talepler</p>
-            <h1 className="display text-4xl font-semibold tracking-tight">
+            <h1 className="display text-3xl sm:text-4xl font-semibold tracking-tight">
               Günün talepleri
             </h1>
             <p className="text-sm text-ink-muted mt-2">
@@ -181,16 +238,16 @@ export default function TeacherPanelPage() {
               {selected.size} seçili
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <button
-              className="btn-secondary"
+              className="btn-secondary flex-1 sm:flex-none"
               onClick={() => fetchItems(password)}
               disabled={loading}
             >
               Yenile
             </button>
             <button
-              className="btn-accent"
+              className="btn-accent flex-1 sm:flex-none"
               onClick={onApprove}
               disabled={processing || selected.size === 0}
             >
@@ -215,63 +272,119 @@ export default function TeacherPanelPage() {
               Bugün için bekleyen talep yok.
             </p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-[11px] text-ink-muted uppercase tracking-wider border-b border-line bg-paper">
-                  <th className="p-3 text-left w-10">
-                    <input
-                      type="checkbox"
-                      checked={selected.size === items.length}
-                      onChange={toggleAll}
-                      className="accent-accent w-4 h-4"
-                    />
-                  </th>
-                  <th className="p-3 text-left font-medium">Ad Soyad</th>
-                  <th className="p-3 text-left font-medium">Okul No</th>
-                  <th className="p-3 text-left font-medium">Sınıf</th>
-                  <th className="p-3 text-left font-medium">Dersler</th>
-                  <th className="p-3 text-left font-medium">Neden</th>
-                  <th className="p-3 text-left font-medium">Saat</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((i) => (
-                  <tr
-                    key={i._id}
-                    className="border-b border-line/60 last:border-0 hover:bg-paper"
-                  >
-                    <td className="p-3">
+            <>
+              <div className="sm:hidden">
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-paper text-[11px] uppercase tracking-wider text-ink-muted">
+                  <input
+                    type="checkbox"
+                    checked={selected.size === items.length}
+                    onChange={toggleAll}
+                    className="accent-accent w-5 h-5"
+                  />
+                  <span>Tümünü seç</span>
+                </div>
+                <ul>
+                  {items.map((i) => (
+                    <li
+                      key={i._id}
+                      className="border-b border-line/60 last:border-0 px-4 py-3 flex items-start gap-3 active:bg-paper"
+                      onClick={() => toggle(i._id)}
+                    >
                       <input
                         type="checkbox"
                         checked={selected.has(i._id)}
                         onChange={() => toggle(i._id)}
-                        className="accent-accent w-4 h-4"
+                        onClick={(e) => e.stopPropagation()}
+                        className="accent-accent w-5 h-5 mt-0.5 shrink-0"
                       />
-                    </td>
-                    <td className="p-3 font-medium">{i.adSoyad}</td>
-                    <td className="p-3 text-ink-muted mark-number">{i.okulNo}</td>
-                    <td className="p-3 text-ink-muted">
-                      {i.sinif}-{i.sube}
-                    </td>
-                    <td className="p-3 text-ink-muted">
-                      {i.baslangicDersi}. - {i.bitisDersi}.
-                    </td>
-                    <td
-                      className="p-3 text-ink-muted max-w-[20rem] truncate"
-                      title={i.neden}
-                    >
-                      {i.neden}
-                    </td>
-                    <td className="p-3 text-ink-muted mark-number">
-                      {new Date(i.createdAt).toLocaleTimeString("tr-TR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="font-medium truncate">{i.adSoyad}</p>
+                          <span className="text-[11px] text-ink-soft mark-number whitespace-nowrap">
+                            {new Date(i.createdAt).toLocaleTimeString("tr-TR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-ink-muted mt-0.5">
+                          <span className="mark-number">{i.okulNo}</span>
+                          <span className="mx-1.5 text-ink-soft">·</span>
+                          {i.sinif}-{i.sube}
+                          <span className="mx-1.5 text-ink-soft">·</span>
+                          {i.baslangicDersi}. - {i.bitisDersi}. ders
+                        </p>
+                        {i.neden && (
+                          <p className="text-xs text-ink-soft mt-1 italic break-words">
+                            “{i.neden}”
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[11px] text-ink-muted uppercase tracking-wider border-b border-line bg-paper">
+                      <th className="p-3 text-left w-10">
+                        <input
+                          type="checkbox"
+                          checked={selected.size === items.length}
+                          onChange={toggleAll}
+                          className="accent-accent w-4 h-4"
+                        />
+                      </th>
+                      <th className="p-3 text-left font-medium">Ad Soyad</th>
+                      <th className="p-3 text-left font-medium">Okul No</th>
+                      <th className="p-3 text-left font-medium">Sınıf</th>
+                      <th className="p-3 text-left font-medium">Dersler</th>
+                      <th className="p-3 text-left font-medium">Neden</th>
+                      <th className="p-3 text-left font-medium">Saat</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((i) => (
+                      <tr
+                        key={i._id}
+                        className="border-b border-line/60 last:border-0 hover:bg-paper"
+                      >
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(i._id)}
+                            onChange={() => toggle(i._id)}
+                            className="accent-accent w-4 h-4"
+                          />
+                        </td>
+                        <td className="p-3 font-medium">{i.adSoyad}</td>
+                        <td className="p-3 text-ink-muted mark-number">{i.okulNo}</td>
+                        <td className="p-3 text-ink-muted">
+                          {i.sinif}-{i.sube}
+                        </td>
+                        <td className="p-3 text-ink-muted">
+                          {i.baslangicDersi}. - {i.bitisDersi}.
+                        </td>
+                        <td
+                          className="p-3 text-ink-muted max-w-[20rem] truncate"
+                          title={i.neden}
+                        >
+                          {i.neden}
+                        </td>
+                        <td className="p-3 text-ink-muted mark-number">
+                          {new Date(i.createdAt).toLocaleTimeString("tr-TR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

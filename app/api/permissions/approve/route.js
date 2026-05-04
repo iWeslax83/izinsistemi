@@ -3,7 +3,7 @@ import { dbConnect } from "@/lib/mongodb";
 import Permission from "@/models/Permission";
 import { logAction } from "@/lib/audit";
 import { extractIp, extractUa } from "@/lib/clientInfo";
-import { verifyTeacherPassword, isSameOrigin } from "@/lib/auth";
+import { verifyTeacherSession, isSameOrigin } from "@/lib/auth";
 
 export async function POST(request) {
   const ip = extractIp(request);
@@ -12,7 +12,7 @@ export async function POST(request) {
     if (!isSameOrigin(request)) {
       return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
     }
-    if (!verifyTeacherPassword(request)) {
+    if (!verifyTeacherSession()) {
       return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
     }
 

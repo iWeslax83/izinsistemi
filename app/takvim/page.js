@@ -141,10 +141,10 @@ export default function CalendarPage() {
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 pt-10 pb-16">
-        <header className="mb-8">
+      <div className="max-w-4xl mx-auto px-4 pt-6 sm:pt-10 pb-16">
+        <header className="mb-6 sm:mb-8">
           <p className="eyebrow mb-3">Takvim</p>
-          <h1 className="display text-4xl font-semibold tracking-tight">
+          <h1 className="display text-3xl sm:text-4xl font-semibold tracking-tight">
             Aylık görünüm
           </h1>
           <p className="text-sm text-ink-muted mt-2">
@@ -152,7 +152,7 @@ export default function CalendarPage() {
           </p>
         </header>
 
-        <div className="card p-5 sm:p-7">
+        <div className="card p-3 sm:p-5 md:p-7">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="display text-2xl font-semibold">
@@ -209,7 +209,7 @@ export default function CalendarPage() {
                 <button
                   key={idx}
                   onClick={() => setSelectedDay(isSelected ? null : key)}
-                  className={`aspect-square rounded-xl border text-left p-2 transition relative ${
+                  className={`aspect-square rounded-lg sm:rounded-xl border text-left p-1.5 sm:p-2 transition relative ${
                     isSelected
                       ? "border-accent bg-accent-soft"
                       : isToday
@@ -218,15 +218,26 @@ export default function CalendarPage() {
                   }`}
                 >
                   <div
-                    className={`mark-number text-sm ${
+                    className={`mark-number text-xs sm:text-sm ${
                       isToday ? "font-bold" : ""
                     }`}
                   >
                     {day}
                   </div>
                   {hasItems && (
-                    <div className="absolute bottom-1.5 right-1.5 mark-number text-[10px] font-semibold text-accent">
-                      {data.count}
+                    <div className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 mark-number text-[10px] font-semibold flex items-baseline gap-px">
+                      <span
+                        className={
+                          data.approved === data.count
+                            ? "text-ok"
+                            : data.approved === 0
+                            ? "text-warn-ink"
+                            : "text-accent"
+                        }
+                      >
+                        {data.approved}
+                      </span>
+                      <span className="text-ink-soft font-normal">/{data.count}</span>
                     </div>
                   )}
                 </button>
@@ -243,10 +254,10 @@ export default function CalendarPage() {
 
         {selectedDay && (
           <div className="mt-6 card overflow-hidden">
-            <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-paper">
+            <div className="px-4 sm:px-6 py-4 border-b border-line flex items-center justify-between bg-paper">
               <div>
                 <p className="eyebrow mb-1">Gün</p>
-                <h3 className="display text-xl font-semibold">
+                <h3 className="display text-lg sm:text-xl font-semibold">
                   {formatTurkishDate(selectedDay)}
                 </h3>
               </div>
@@ -271,7 +282,7 @@ export default function CalendarPage() {
                 {dayItems.map((i, idx) => (
                   <li
                     key={i._id}
-                    className="flex items-center gap-4 px-6 py-3"
+                    className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3"
                   >
                     <span className="mark-number text-xs text-ink-soft w-6 tabular-nums">
                       {String(idx + 1).padStart(2, "0")}

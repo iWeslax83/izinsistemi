@@ -3,13 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { formatTurkishDate } from "@/lib/date";
+import { formatTurkishDate, todayKey } from "@/lib/date";
 
 export default function HistoryPage() {
   const [okulNo, setOkulNo] = useState("");
   const [items, setItems] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [cancelling, setCancelling] = useState(null);
+
+  const fetchItems = async (no) => {
+    const res = await fetch(
+      `/api/permissions/history?okulNo=${encodeURIComponent(no)}`
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Hata oluştu");
+    return data.items || [];
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -17,18 +27,41 @@ export default function HistoryPage() {
     setError("");
     setItems(null);
     try {
-      const res = await fetch(
-        `/api/permissions/history?okulNo=${encodeURIComponent(okulNo.trim())}`
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Hata oluştu");
-      setItems(data.items || []);
+      const next = await fetchItems(okulNo.trim());
+      setItems(next);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  const onCancel = async (id) => {
+    if (!okulNo.trim()) return;
+    if (typeof window !== "undefined" && !window.confirm("Talebini iptal etmek istediğine emin misin?")) {
+      return;
+    }
+    setCancelling(id);
+    setError("");
+    try {
+      const res = await fetch("/api/permissions/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ id, okulNo: okulNo.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "İptal edilemedi.");
+      const next = await fetchItems(okulNo.trim());
+      setItems(next);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCancelling(null);
+    }
+  };
+
+  const today = todayKey();
 
   return (
     <main className="min-h-screen">
@@ -57,10 +90,10 @@ export default function HistoryPage() {
         </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-4 pt-10 pb-16">
-        <header className="mb-8">
+      <div className="max-w-3xl mx-auto px-4 pt-6 sm:pt-10 pb-16">
+        <header className="mb-6 sm:mb-8">
           <p className="eyebrow mb-3">Geçmişim</p>
-          <h1 className="display text-4xl font-semibold tracking-tight">
+          <h1 className="display text-3xl sm:text-4xl font-semibold tracking-tight">
             Geçmiş talepler
           </h1>
           <p className="text-sm text-ink-muted mt-2 max-w-md">
@@ -103,35 +136,51 @@ export default function HistoryPage() {
               </div>
             ) : (
               <ul className="divide-y divide-line">
-                {items.map((i, idx) => (
-                  <li key={i._id} className="flex items-center gap-4 py-3">
-                    <span className="mark-number text-xs text-ink-soft w-8 tabular-nums">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{i.adSoyad}</p>
-                      <p className="text-xs text-ink-muted mt-0.5">
-                        <span className="mark-number">
-                          {formatTurkishDate(i.gun)}
-                        </span>
-                        <span className="mx-1.5 text-ink-soft">·</span>
-                        {i.sinif}-{i.sube}
-                        <span className="mx-1.5 text-ink-soft">·</span>
-                        {i.baslangicDersi}. - {i.bitisDersi}. ders
-                      </p>
-                      {i.neden && (
-                        <p className="text-xs text-ink-soft mt-1 italic">
-                          “{i.neden}”
+                {items.map((i, idx) => {
+                  const cancellable =
+                    i.status === "beklemede" && i.gun === today;
+                  return (
+                    <li key={i._id} className="flex items-center gap-4 py-3">
+                      <span className="mark-number text-xs text-ink-soft w-8 tabular-nums">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{i.adSoyad}</p>
+                        <p className="text-xs text-ink-muted mt-0.5">
+                          <span className="mark-number">
+                            {formatTurkishDate(i.gun)}
+                          </span>
+                          <span className="mx-1.5 text-ink-soft">·</span>
+                          {i.sinif}-{i.sube}
+                          <span className="mx-1.5 text-ink-soft">·</span>
+                          {i.baslangicDersi}. - {i.bitisDersi}. ders
                         </p>
-                      )}
-                    </div>
-                    {i.status === "approved" ? (
-                      <span className="badge-ok">onaylandı</span>
-                    ) : (
-                      <span className="badge-warn">beklemede</span>
-                    )}
-                  </li>
-                ))}
+                        {i.neden && (
+                          <p className="text-xs text-ink-soft mt-1 italic">
+                            “{i.neden}”
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {i.status === "approved" ? (
+                          <span className="badge-ok">onaylandı</span>
+                        ) : (
+                          <span className="badge-warn">beklemede</span>
+                        )}
+                        {cancellable && (
+                          <button
+                            type="button"
+                            onClick={() => onCancel(i._id)}
+                            disabled={cancelling === i._id}
+                            className="btn-ghost text-xs text-danger-ink hover:bg-danger-soft disabled:opacity-50"
+                          >
+                            {cancelling === i._id ? "…" : "Sil"}
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </>

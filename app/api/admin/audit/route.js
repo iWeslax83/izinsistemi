@@ -2,14 +2,17 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import AuditLog from "@/models/AuditLog";
-import { verifyTeacherPassword } from "@/lib/auth";
+import { verifyAdminSession, isSameOrigin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
 export async function GET(request) {
-  if (!verifyTeacherPassword(request)) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+  }
+  if (!verifyAdminSession()) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 

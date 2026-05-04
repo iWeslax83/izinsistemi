@@ -22,16 +22,10 @@ export default function AuditLogPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem("teacher-pwd");
-      if (saved) {
-        setPassword(saved);
-        fetchPage(saved, 1, filters);
-      }
-    } catch {}
+    fetchPage(1, filters);
   }, []);
 
-  const fetchPage = async (pwd, p, f) => {
+  const fetchPage = async (p, f) => {
     setLoading(true);
     setError("");
     try {
@@ -43,11 +37,11 @@ export default function AuditLogPage() {
       if (f.to) qs.set("to", f.to);
       qs.set("page", String(p));
       const res = await fetch(`/api/admin/audit?${qs.toString()}`, {
-        headers: { "x-teacher-password": pwd },
+        credentials: "same-origin",
+        cache: "no-store",
       });
       if (res.status === 401) {
         setAuthed(false);
-        setError("Şifre hatalı.");
         return;
       }
       const data = await res.json();
@@ -57,7 +51,6 @@ export default function AuditLogPage() {
       setHasMore(!!data.hasMore);
       setPage(p);
       setAuthed(true);
-      try { sessionStorage.setItem("teacher-pwd", pwd); } catch {}
     } catch (e) {
       setError(e.message);
     } finally {
@@ -65,14 +58,34 @@ export default function AuditLogPage() {
     }
   };
 
-  const onLogin = (e) => {
+  const onLogin = async (e) => {
     e.preventDefault();
-    fetchPage(password, 1, filters);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ password, role: "admin" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Giriş yapılamadı.");
+        return;
+      }
+      setPassword("");
+      await fetchPage(1, filters);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onFilter = (e) => {
     e.preventDefault();
-    fetchPage(password, 1, filters);
+    fetchPage(1, filters);
   };
 
   const exportJson = () => {
@@ -90,11 +103,11 @@ export default function AuditLogPage() {
       <main className="min-h-screen flex items-center justify-center px-4">
         <form onSubmit={onLogin} className="card p-7 space-y-4 w-full max-w-sm">
           <div>
-            <p className="eyebrow mb-2">Öğretmen · Log</p>
+            <p className="eyebrow mb-2">Yönetici · Log</p>
             <h1 className="display text-2xl font-semibold">Log paneli</h1>
           </div>
           <div>
-            <label className="field-label">Şifre</label>
+            <label className="field-label">Yönetici Şifresi</label>
             <input
               type="password"
               className="field-input"
@@ -140,7 +153,7 @@ export default function AuditLogPage() {
           <p className="text-sm text-ink-muted mt-1">Toplam {total} kayıt · sayfa {page}</p>
         </header>
 
-        <form onSubmit={onFilter} className="card p-4 mb-5 grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <form onSubmit={onFilter} className="card p-4 mb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <select
             className="field-input"
             value={filters.actor}
@@ -160,7 +173,7 @@ export default function AuditLogPage() {
             ))}
           </select>
           <input
-            className="field-input"
+            className="field-input sm:col-span-2 lg:col-span-1"
             placeholder="okulNo"
             value={filters.actorRef}
             onChange={(e) => setFilters({ ...filters, actorRef: e.target.value })}
@@ -177,7 +190,7 @@ export default function AuditLogPage() {
             value={filters.to}
             onChange={(e) => setFilters({ ...filters, to: e.target.value })}
           />
-          <div className="col-span-2 sm:col-span-5 flex gap-2 justify-end">
+          <div className="sm:col-span-2 lg:col-span-5 flex flex-col sm:flex-row gap-2 sm:justify-end">
             <button type="button" onClick={exportJson} className="btn-secondary">
               JSON indir
             </button>
@@ -193,8 +206,8 @@ export default function AuditLogPage() {
           </div>
         )}
 
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="card overflow-x-auto -mx-4 sm:mx-0 sm:rounded-2xl">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="text-[11px] text-ink-muted uppercase tracking-wider border-b border-line bg-paper">
                 <th className="p-3 text-left font-medium">Zaman</th>
@@ -234,14 +247,14 @@ export default function AuditLogPage() {
           <button
             className="btn-secondary"
             disabled={page <= 1 || loading}
-            onClick={() => fetchPage(password, page - 1, filters)}
+            onClick={() => fetchPage(page - 1, filters)}
           >
             ← Önceki
           </button>
           <button
             className="btn-secondary"
             disabled={!hasMore || loading}
-            onClick={() => fetchPage(password, page + 1, filters)}
+            onClick={() => fetchPage(page + 1, filters)}
           >
             Sonraki →
           </button>

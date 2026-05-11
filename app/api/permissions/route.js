@@ -150,6 +150,25 @@ export async function GET(request) {
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 
+  const ip = extractIp(request);
+  const ua = extractUa(request);
+  const { sid } = getOrCreateSid();
+  const perIp = await hitBucket({
+    key: `get-permission:ip:${ip}`,
+    limit: 120,
+    windowSec: 60,
+  });
+  if (!perIp.ok) {
+    logAction({
+      actor: "ogretmen",
+      action: "rate_blocked",
+      meta: { rule: "get-permission:ip", limit: perIp.limit, windowSec: perIp.windowSec },
+      ip, sid, ua,
+    });
+    const r = rateLimitResponse(perIp, "Çok hızlı sorguluyorsun.");
+    return NextResponse.json(r.body, { status: r.status, headers: r.headers });
+  }
+
   try {
     await dbConnect();
     const gun = todayKey();

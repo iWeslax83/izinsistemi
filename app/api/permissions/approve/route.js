@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import Permission from "@/models/Permission";
+import PermissionArchive from "@/models/PermissionArchive";
 import { logAction } from "@/lib/audit";
 import { extractIp, extractUa } from "@/lib/clientInfo";
 import { verifyTeacherSession, isSameOrigin } from "@/lib/auth";
@@ -25,20 +26,28 @@ export async function POST(request) {
     }
 
     await dbConnect();
-    const res = await Permission.updateMany(
-      { _id: { $in: ids }, status: "beklemede" },
-      { $set: { status: "approved" } }
-    );
+    const [activeRes, archiveRes] = await Promise.all([
+      Permission.updateMany(
+        { _id: { $in: ids }, status: "beklemede" },
+        { $set: { status: "approved" } }
+      ),
+      PermissionArchive.updateMany(
+        { _id: { $in: ids }, status: "beklemede" },
+        { $set: { status: "approved" } }
+      ),
+    ]);
+    const modified =
+      (activeRes.modifiedCount || 0) + (archiveRes.modifiedCount || 0);
 
     logAction({
       actor: "ogretmen",
       actorRef: "teacher",
       action: "approve",
-      meta: { ids, count: res.modifiedCount },
+      meta: { ids, count: modified },
       ip, ua,
     });
 
-    return NextResponse.json({ ok: true, modified: res.modifiedCount });
+    return NextResponse.json({ ok: true, modified });
   } catch (e) {
     console.error("POST /api/permissions/approve", e);
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });

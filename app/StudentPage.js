@@ -28,6 +28,7 @@ export default function StudentPage({ initialItems = [] }) {
   const [online, setOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [reasonSuggestions, setReasonSuggestions] = useState([]);
   const suggestionsRef = useRef(null);
   const debounceRef = useRef(null);
 
@@ -55,6 +56,21 @@ export default function StudentPage({ initialItems = [] }) {
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", tick);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/permissions/reasons", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setReasonSuggestions(data.reasons || []);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -385,6 +401,23 @@ export default function StudentPage({ initialItems = [] }) {
                       {form.neden.length}/200
                     </span>
                   </label>
+                  {reasonSuggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {reasonSuggestions.slice(0, 8).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() =>
+                            setForm((f) => ({ ...f, neden: r }))
+                          }
+                          className="text-[11px] px-2 py-1 rounded-full border border-line bg-paper hover:border-ink-soft hover:bg-surface text-ink-muted transition"
+                          title="Tıkla, neden alanını doldur"
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <textarea
                     className="field-input resize-none"
                     name="neden"

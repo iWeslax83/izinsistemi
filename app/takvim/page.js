@@ -137,6 +137,13 @@ export default function CalendarPage() {
             <Link href="/gecmis" className="text-ink-muted hover:text-ink transition">
               Geçmişim
             </Link>
+            <Link
+              href="/ogretmen/istatistik"
+              className="text-ink-muted hover:text-ink transition"
+              title="Öğretmen paneli"
+            >
+              İstatistik
+            </Link>
           </div>
         </div>
       </nav>

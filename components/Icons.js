@@ -87,6 +87,16 @@ export function Check({ size = 18, className = "", ...rest }) {
   );
 }
 
+export function Info({ size = 16, className = "", ...rest }) {
+  return (
+    <svg {...base(size, className, rest)}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11.5V16.5" />
+      <circle cx="12" cy="8.4" r="0.7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function Bell({ size = 16, className = "", ...rest }) {
   return (
     <svg {...base(size, className, rest)}>

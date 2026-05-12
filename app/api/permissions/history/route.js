@@ -77,10 +77,11 @@ export async function GET(request) {
       }
     }
 
+    const baseProjection =
+      "adSoyad okulNo sinif sube baslangicDersi bitisDersi neden status gun createdAt";
     const items = await findAcrossCollections({
       filter: { okulNo },
-      projection:
-        "adSoyad okulNo sinif sube baslangicDersi bitisDersi neden status gun createdAt",
+      projection: teacher ? `${baseProjection} meta` : baseProjection,
       sort: { createdAt: -1 },
       limit: 50,
     });

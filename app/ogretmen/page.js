@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { generatePermissionPdf } from "@/lib/pdf";
 import { formatTurkishDate } from "@/lib/date";
-import { ArrowLeft, Chevron, Bell } from "@/components/Icons";
+import { ArrowLeft, Chevron, Bell, Info } from "@/components/Icons";
 
 const REFRESH_INTERVAL_MS = 30_000;
 const PAST_DAYS = 30;
@@ -630,6 +630,14 @@ export default function TeacherPanelPage() {
                           </p>
                         )}
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openStudentHistory(i); }}
+                        className="text-ink-muted hover:text-ink active:text-accent p-1.5 -m-1 shrink-0 mt-0.5"
+                        aria-label="Talep detayları"
+                      >
+                        <Info size={16} />
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -921,6 +929,14 @@ export default function TeacherPanelPage() {
                                   </p>
                                 )}
                               </div>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); openStudentHistory(i); }}
+                                className="text-ink-muted hover:text-ink active:text-accent p-1.5 -m-1 shrink-0 mt-0.5"
+                                aria-label="Talep detayları"
+                              >
+                                <Info size={16} />
+                              </button>
                             </li>
                           ))}
                         </ul>
@@ -1103,6 +1119,50 @@ export default function TeacherPanelPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
+              {(() => {
+                const s = studentHistory.student;
+                const m = s.meta || {};
+                const rows = [
+                  ["Zaman", s.createdAt ? new Date(s.createdAt).toLocaleString("tr-TR") : ""],
+                  ["IP", m.ip],
+                  ["Forwarded", m.forwardedFor],
+                  ["Real-IP", m.realIp],
+                  ["CF-IP", m.cfIp],
+                  ["CF-Ülke", m.cfCountry],
+                  ["Session", m.sid],
+                  ["Dil", m.acceptLanguage],
+                  ["Origin", m.origin],
+                  ["Referer", m.referer],
+                  ["Platform", m.secChUaPlatform],
+                  ["Mobil", m.secChUaMobile],
+                  ["UA-Hints", m.secChUa],
+                  ["DNT", m.dnt],
+                  ["User-Agent", m.ua],
+                ].filter(([, v]) => v && v !== "unknown");
+                return (
+                  <div className="px-4 sm:px-5 py-3 bg-paper/60 border-b border-line">
+                    <p className="eyebrow mb-2">Talep meta verisi</p>
+                    {rows.length === 0 ? (
+                      <p className="text-[11px] text-ink-muted">
+                        Bu talep için meta veri yok (eski kayıt veya başlıklar eksik).
+                      </p>
+                    ) : (
+                      <div className="space-y-1 text-[11px]">
+                        {rows.map(([k, v]) => (
+                          <div key={k} className="flex gap-2">
+                            <span className="text-ink-muted uppercase tracking-wider shrink-0 w-20 sm:w-24">
+                              {k}
+                            </span>
+                            <span className="text-ink break-all font-mono">
+                              {v}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {studentHistory.loading ? (
                 <p className="p-8 text-center text-ink-muted text-sm">
                   Yükleniyor…

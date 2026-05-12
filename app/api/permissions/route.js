@@ -4,7 +4,7 @@ import Permission from "@/models/Permission";
 import { todayKey } from "@/lib/date";
 import { hitBucket, hitDistinctBucket, rateLimitResponse } from "@/lib/rateLimit";
 import { logAction } from "@/lib/audit";
-import { extractIp, extractUa, getOrCreateSid } from "@/lib/clientInfo";
+import { extractIp, extractUa, extractMeta, getOrCreateSid } from "@/lib/clientInfo";
 import { verifyTeacherSession, isSameOrigin } from "@/lib/auth";
 
 export async function POST(request) {
@@ -121,6 +121,7 @@ export async function POST(request) {
       neden: nedenTrim,
       gun,
       status: "beklemede",
+      meta: { ...extractMeta(request), sid },
     });
 
     logAction({

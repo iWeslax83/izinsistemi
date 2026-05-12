@@ -31,7 +31,7 @@ export async function GET(request) {
     try {
       await dbConnect();
       const projection =
-        "adSoyad okulNo sinif sube baslangicDersi bitisDersi neden status gun createdAt";
+        "adSoyad okulNo sinif sube baslangicDersi bitisDersi neden status gun createdAt meta";
       const [active, archived] = await Promise.all([
         Permission.find({ gun }, projection).sort({ createdAt: 1 }).lean(),
         PermissionArchive.find({ gun }, projection).sort({ createdAt: 1 }).lean(),

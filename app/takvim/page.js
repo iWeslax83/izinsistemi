@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatTurkishDate, todayKey } from "@/lib/date";
+import { Mark, ArrowLeft, ArrowRight, Calendar, Clock } from "@/components/Icons";
 
 const AY_ADLARI = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -118,14 +118,8 @@ export default function CalendarPage() {
     <main className="min-h-screen">
       <nav className="border-b border-line bg-paper/70 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image
-              src="/icon-192.png"
-              alt="atölye"
-              width={32}
-              height={32}
-              className="h-8 w-8"
-            />
+          <Link href="/" className="flex items-center gap-2.5 text-ink">
+            <Mark size={20} className="text-accent" />
             <span className="text-[11px] text-ink-muted tracking-wider uppercase">
               Takvim
             </span>
@@ -134,8 +128,9 @@ export default function CalendarPage() {
             <Link href="/" className="text-ink-muted hover:text-ink transition">
               Yeni Talep
             </Link>
-            <Link href="/gecmis" className="text-ink-muted hover:text-ink transition">
-              Geçmişim
+            <Link href="/gecmis" className="inline-flex items-center gap-1.5 text-ink-muted hover:text-ink transition">
+              <Clock size={15} />
+              <span>Geçmişim</span>
             </Link>
             <Link
               href="/ogretmen/istatistik"
@@ -162,10 +157,13 @@ export default function CalendarPage() {
         <div className="card p-3 sm:p-5 md:p-7">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="display text-2xl font-semibold">
-                {AY_ADLARI[month]}{" "}
-                <span className="mark-number text-ink-muted font-normal">
-                  {year}
+              <h2 className="display text-2xl font-semibold inline-flex items-center gap-2.5">
+                <Calendar size={20} className="text-accent" />
+                <span>
+                  {AY_ADLARI[month]}{" "}
+                  <span className="mark-number text-ink-muted font-normal">
+                    {year}
+                  </span>
                 </span>
               </h2>
               <p className="text-xs text-ink-muted mt-1">
@@ -178,14 +176,14 @@ export default function CalendarPage() {
                 className="btn-secondary !px-3"
                 aria-label="Önceki ay"
               >
-                ←
+                <ArrowLeft size={16} />
               </button>
               <button
                 onClick={nextMonth}
                 className="btn-secondary !px-3"
                 aria-label="Sonraki ay"
               >
-                →
+                <ArrowRight size={16} />
               </button>
             </div>
           </div>

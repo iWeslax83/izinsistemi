@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { countQueue, enqueuePermission, requestSync } from "@/lib/offlineQueue";
+import { Mark, Calendar, Clock, Check } from "@/components/Icons";
 
 const SINIFLAR = [9, 10, 11, 12];
 const SUBELER = ["A", "B", "C", "D"];
@@ -227,17 +228,20 @@ export default function StudentPage({ initialItems = [] }) {
     <main className="min-h-screen">
       <nav className="border-b border-line bg-paper/70 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 text-ink">
+            <Mark size={20} className="text-accent" />
             <span className="text-[11px] text-ink-muted tracking-wider uppercase">
               İzin Sistemi
             </span>
           </Link>
           <div className="flex items-center gap-4 text-sm">
-            <Link href="/gecmis" className="text-ink-muted hover:text-ink transition">
-              Geçmişim
+            <Link href="/gecmis" className="inline-flex items-center gap-1.5 text-ink-muted hover:text-ink transition">
+              <Clock size={15} />
+              <span>Geçmişim</span>
             </Link>
-            <Link href="/takvim" className="text-ink-muted hover:text-ink transition">
-              Takvim
+            <Link href="/takvim" className="inline-flex items-center gap-1.5 text-ink-muted hover:text-ink transition">
+              <Calendar size={15} />
+              <span>Takvim</span>
             </Link>
           </div>
         </div>
@@ -502,9 +506,9 @@ export default function StudentPage({ initialItems = [] }) {
                       )}
                     </div>
                     {i.status === "approved" ? (
-                      <span className="badge-ok">onaylandı</span>
+                      <span className="badge-ok"><Check size={11} /> onaylandı</span>
                     ) : (
-                      <span className="badge-warn">beklemede</span>
+                      <span className="badge-warn"><Clock size={11} /> beklemede</span>
                     )}
                   </li>
                 ))}

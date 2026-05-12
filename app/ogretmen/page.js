@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { generatePermissionPdf } from "@/lib/pdf";
 import { formatTurkishDate } from "@/lib/date";
+import { ArrowLeft, Chevron, Bell } from "@/components/Icons";
 
 const REFRESH_INTERVAL_MS = 30_000;
 const PAST_DAYS = 30;
@@ -473,9 +474,9 @@ export default function TeacherPanelPage() {
         <div className="w-full max-w-sm">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs text-ink-muted hover:text-ink mb-6"
+            className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink mb-6"
           >
-            ← ana sayfa
+            <ArrowLeft size={14} /> ana sayfa
           </Link>
           <form onSubmit={onLogin} className="card p-7 space-y-4">
             <div>
@@ -541,6 +542,7 @@ export default function TeacherPanelPage() {
               {selected.size} seçili
               {newArrived > 0 && (
                 <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-accent-soft text-accent-ink px-2 py-0.5 text-[11px] font-medium animate-pulse">
+                  <Bell size={12} />
                   +{newArrived} yeni
                 </span>
               )}
@@ -832,12 +834,11 @@ export default function TeacherPanelPage() {
                           )}
                         </p>
                       </div>
-                      <span
-                        className="text-ink-muted text-sm shrink-0"
-                        aria-hidden="true"
-                      >
-                        {isOpen ? "▾" : "▸"}
-                      </span>
+                      <Chevron
+                        size={16}
+                        open={isOpen}
+                        className="text-ink-muted shrink-0"
+                      />
                     </button>
 
                     {isOpen && (

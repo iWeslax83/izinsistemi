@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatTurkishDate, todayKey } from "@/lib/date";
+import { Mark, Calendar, Clock } from "@/components/Icons";
 
 export default function HistoryPage() {
   const [okulNo, setOkulNo] = useState("");
@@ -67,14 +67,8 @@ export default function HistoryPage() {
     <main className="min-h-screen">
       <nav className="border-b border-line bg-paper/70 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image
-              src="/icon-192.png"
-              alt="atölye"
-              width={32}
-              height={32}
-              className="h-8 w-8"
-            />
+          <Link href="/" className="flex items-center gap-2.5 text-ink">
+            <Mark size={20} className="text-accent" />
             <span className="text-[11px] text-ink-muted tracking-wider uppercase">
               Geçmiş
             </span>
@@ -83,8 +77,9 @@ export default function HistoryPage() {
             <Link href="/" className="text-ink-muted hover:text-ink transition">
               Yeni Talep
             </Link>
-            <Link href="/takvim" className="text-ink-muted hover:text-ink transition">
-              Takvim
+            <Link href="/takvim" className="inline-flex items-center gap-1.5 text-ink-muted hover:text-ink transition">
+              <Calendar size={15} />
+              <span>Takvim</span>
             </Link>
           </div>
         </div>
@@ -93,8 +88,9 @@ export default function HistoryPage() {
       <div className="max-w-3xl mx-auto px-4 pt-6 sm:pt-10 pb-16">
         <header className="mb-6 sm:mb-8">
           <p className="eyebrow mb-3">Geçmişim</p>
-          <h1 className="display text-3xl sm:text-4xl font-semibold tracking-tight">
-            Geçmiş talepler
+          <h1 className="display text-3xl sm:text-4xl font-semibold tracking-tight inline-flex items-center gap-3">
+            <Clock size={28} className="text-accent shrink-0" />
+            <span>Geçmiş talepler</span>
           </h1>
           <p className="text-sm text-ink-muted mt-2 max-w-md">
             Okul numaranı gir, son 50 talebini tarihe göre listele.

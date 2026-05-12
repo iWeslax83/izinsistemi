@@ -1,11 +1,16 @@
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const SHELL_CACHE = `izin-shell-${CACHE_VERSION}`;
 const SHELL_ASSETS = ["/", "/gecmis", "/takvim", "/manifest.json"];
+const IS_DEV =
+  self.location.hostname === "localhost" ||
+  self.location.hostname === "127.0.0.1";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_ASSETS))
-  );
+  if (!IS_DEV) {
+    event.waitUntil(
+      caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_ASSETS))
+    );
+  }
   self.skipWaiting();
 });
 
@@ -28,6 +33,8 @@ self.addEventListener("fetch", (event) => {
 
   if (request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
+
+  if (IS_DEV) return;
 
   if (request.mode === "navigate") {
     event.respondWith(

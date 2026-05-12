@@ -625,7 +625,7 @@ export default function TeacherPanelPage() {
                           {i.baslangicDersi}. - {i.bitisDersi}. ders
                         </p>
                         {i.neden && (
-                          <p className="text-xs text-ink-soft mt-1 italic break-words">
+                          <p className="text-xs text-ink-soft mt-1 italic break-words uppercase tracking-wide">
                             “{i.neden}”
                           </p>
                         )}
@@ -687,7 +687,7 @@ export default function TeacherPanelPage() {
                           {i.baslangicDersi}. - {i.bitisDersi}.
                         </td>
                         <td
-                          className="p-3 text-ink-muted max-w-[20rem] truncate"
+                          className="p-3 text-ink-muted max-w-[20rem] truncate uppercase tracking-wide"
                           title={i.neden}
                         >
                           {i.neden}
@@ -916,7 +916,7 @@ export default function TeacherPanelPage() {
                                   {i.baslangicDersi}. - {i.bitisDersi}. ders
                                 </p>
                                 {i.neden && (
-                                  <p className="text-xs text-ink-soft mt-1 italic break-words">
+                                  <p className="text-xs text-ink-soft mt-1 italic break-words uppercase tracking-wide">
                                     “{i.neden}”
                                   </p>
                                 )}
@@ -986,7 +986,7 @@ export default function TeacherPanelPage() {
                                     {i.baslangicDersi}. - {i.bitisDersi}.
                                   </td>
                                   <td
-                                    className="p-3 text-ink-muted max-w-[20rem] truncate"
+                                    className="p-3 text-ink-muted max-w-[20rem] truncate uppercase tracking-wide"
                                     title={i.neden}
                                   >
                                     {i.neden}
@@ -1133,7 +1133,7 @@ export default function TeacherPanelPage() {
                           </span>
                         </p>
                         {it.neden && (
-                          <p className="text-xs text-ink-soft mt-1 italic break-words">
+                          <p className="text-xs text-ink-soft mt-1 italic break-words uppercase tracking-wide">
                             “{it.neden}”
                           </p>
                         )}

@@ -1152,19 +1152,10 @@ export default function TeacherPanelPage() {
                 }
                 const fmtDate = (iso) =>
                   iso ? new Date(iso).toLocaleString("tr-TR") : "—";
-                const StatPair = ({ label, total, distinct }) => (
+                const StatPair = ({ total, distinct }) => (
                   <span className="mark-number">
                     <span className="font-semibold">{total}</span> talep ·{" "}
-                    <span
-                      className={
-                        distinct >= 3
-                          ? "font-semibold text-danger-ink"
-                          : "font-semibold"
-                      }
-                    >
-                      {distinct}
-                    </span>{" "}
-                    farklı öğrenci
+                    <span className="font-semibold">{distinct}</span> farklı öğrenci
                   </span>
                 );
                 return (

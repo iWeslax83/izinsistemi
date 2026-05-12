@@ -77,28 +77,6 @@ export async function GET(request) {
     const device = parseUa(m.ua || "");
 
     const flags = [];
-    if (sid && sid7.distinctStudents >= 3) {
-      flags.push({
-        level: "high",
-        text: `Bu cihaz son 7 günde ${sid7.distinctStudents} farklı öğrenci için talep gönderdi.`,
-      });
-    } else if (sid && sid30.distinctStudents >= 5) {
-      flags.push({
-        level: "med",
-        text: `Bu cihaz son 30 günde ${sid30.distinctStudents} farklı öğrenci için talep gönderdi.`,
-      });
-    }
-    if (ip && ip7.distinctStudents >= 6) {
-      flags.push({
-        level: "high",
-        text: `Bu IP'den son 7 günde ${ip7.distinctStudents} farklı öğrenci için talep geldi.`,
-      });
-    } else if (ip && ip30.distinctStudents >= 10) {
-      flags.push({
-        level: "med",
-        text: `Bu IP'den son 30 günde ${ip30.distinctStudents} farklı öğrenci için talep geldi.`,
-      });
-    }
     if (!sid) {
       flags.push({
         level: "med",

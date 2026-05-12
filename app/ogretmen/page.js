@@ -307,21 +307,32 @@ export default function TeacherPanelPage() {
     setStudentHistory({
       student,
       items: [],
+      cluster: null,
       loading: true,
       error: "",
     });
     try {
-      const res = await fetch(
-        `/api/permissions/history?okulNo=${encodeURIComponent(student.okulNo)}`,
-        { credentials: "same-origin", cache: "no-store" }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "Geçmiş alınamadı");
-      }
+      const [histRes, clusterRes] = await Promise.all([
+        fetch(
+          `/api/permissions/history?okulNo=${encodeURIComponent(student.okulNo)}`,
+          { credentials: "same-origin", cache: "no-store" }
+        ),
+        fetch(`/api/permissions/cluster?id=${encodeURIComponent(student._id)}`, {
+          credentials: "same-origin",
+          cache: "no-store",
+        }),
+      ]);
+      const histData = await histRes.json().catch(() => ({}));
+      if (!histRes.ok) throw new Error(histData.error || "Geçmiş alınamadı");
+      const clusterData = clusterRes.ok ? await clusterRes.json() : null;
       setStudentHistory((prev) =>
         prev
-          ? { ...prev, items: data.items || [], loading: false }
+          ? {
+              ...prev,
+              items: histData.items || [],
+              cluster: clusterData,
+              loading: false,
+            }
           : prev
       );
     } catch (e) {
@@ -1120,44 +1131,152 @@ export default function TeacherPanelPage() {
             </div>
             <div className="flex-1 overflow-y-auto">
               {(() => {
+                const c = studentHistory.cluster;
                 const s = studentHistory.student;
-                const m = s.meta || {};
-                const rows = [
-                  ["Zaman", s.createdAt ? new Date(s.createdAt).toLocaleString("tr-TR") : ""],
-                  ["IP", m.ip],
-                  ["Forwarded", m.forwardedFor],
-                  ["Real-IP", m.realIp],
-                  ["CF-IP", m.cfIp],
-                  ["CF-Ülke", m.cfCountry],
-                  ["Session", m.sid],
-                  ["Dil", m.acceptLanguage],
-                  ["Origin", m.origin],
-                  ["Referer", m.referer],
-                  ["Platform", m.secChUaPlatform],
-                  ["Mobil", m.secChUaMobile],
-                  ["UA-Hints", m.secChUa],
-                  ["DNT", m.dnt],
-                  ["User-Agent", m.ua],
-                ].filter(([, v]) => v && v !== "unknown");
-                return (
-                  <div className="px-4 sm:px-5 py-3 bg-paper/60 border-b border-line">
-                    <p className="eyebrow mb-2">Talep meta verisi</p>
-                    {rows.length === 0 ? (
+                if (!c && !studentHistory.loading && !s.meta) {
+                  return (
+                    <div className="px-4 sm:px-5 py-3 bg-paper/60 border-b border-line">
+                      <p className="eyebrow mb-1">Talep kaynağı</p>
                       <p className="text-[11px] text-ink-muted">
-                        Bu talep için meta veri yok (eski kayıt veya başlıklar eksik).
+                        Bu talep için meta veri yok (eski kayıt).
                       </p>
-                    ) : (
-                      <div className="space-y-1 text-[11px]">
-                        {rows.map(([k, v]) => (
-                          <div key={k} className="flex gap-2">
-                            <span className="text-ink-muted uppercase tracking-wider shrink-0 w-20 sm:w-24">
-                              {k}
-                            </span>
-                            <span className="text-ink break-all font-mono">
-                              {v}
-                            </span>
-                          </div>
+                    </div>
+                  );
+                }
+                if (!c) {
+                  return (
+                    <div className="px-4 sm:px-5 py-3 bg-paper/60 border-b border-line text-[11px] text-ink-muted">
+                      Talep kaynağı yükleniyor…
+                    </div>
+                  );
+                }
+                const fmtDate = (iso) =>
+                  iso ? new Date(iso).toLocaleString("tr-TR") : "—";
+                const StatPair = ({ label, total, distinct }) => (
+                  <span className="mark-number">
+                    <span className="font-semibold">{total}</span> talep ·{" "}
+                    <span
+                      className={
+                        distinct >= 3
+                          ? "font-semibold text-danger-ink"
+                          : "font-semibold"
+                      }
+                    >
+                      {distinct}
+                    </span>{" "}
+                    farklı öğrenci
+                  </span>
+                );
+                return (
+                  <div className="px-4 sm:px-5 py-3 bg-paper/60 border-b border-line space-y-3">
+                    {c.flags.length > 0 && (
+                      <ul className="space-y-1.5">
+                        {c.flags.map((f, idx) => (
+                          <li
+                            key={idx}
+                            className={`text-xs rounded-md border px-2.5 py-1.5 ${
+                              f.level === "high"
+                                ? "bg-danger-soft border-danger/20 text-danger-ink"
+                                : "bg-warn-soft border-warn/20 text-warn-ink"
+                            }`}
+                          >
+                            {f.text}
+                          </li>
                         ))}
+                      </ul>
+                    )}
+
+                    <div className="text-[11px] space-y-1.5">
+                      <div className="flex gap-2">
+                        <span className="text-ink-muted uppercase tracking-wider shrink-0 w-20 sm:w-24">
+                          Zaman
+                        </span>
+                        <span className="text-ink mark-number">
+                          {fmtDate(c.createdAt)}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-ink-muted uppercase tracking-wider shrink-0 w-20 sm:w-24">
+                          Cihaz
+                        </span>
+                        <span className="text-ink">
+                          {c.device.label || "—"}
+                          {c.device.mobile ? " · mobil" : ""}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-ink-muted uppercase tracking-wider shrink-0 w-20 sm:w-24">
+                          IP
+                        </span>
+                        <span className="text-ink font-mono">
+                          {c.ip || "—"}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-ink-muted uppercase tracking-wider shrink-0 w-20 sm:w-24">
+                          Cihaz ID
+                        </span>
+                        <span className="text-ink font-mono">
+                          {c.sid ? `${c.sid}…` : "yok"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {(c.sid || c.ip) && (
+                      <div className="border-t border-line/60 pt-2.5 space-y-2 text-[11px]">
+                        <p className="eyebrow !text-ink-muted">Toplu davranış</p>
+                        {c.sid && (
+                          <>
+                            <div className="flex gap-2">
+                              <span className="text-ink-muted uppercase tracking-wider shrink-0 w-28">
+                                Bu cihaz · 7g
+                              </span>
+                              <StatPair
+                                total={c.sidStats.last7.total}
+                                distinct={c.sidStats.last7.distinctStudents}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-ink-muted uppercase tracking-wider shrink-0 w-28">
+                                Bu cihaz · 30g
+                              </span>
+                              <StatPair
+                                total={c.sidStats.last30.total}
+                                distinct={c.sidStats.last30.distinctStudents}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-ink-muted uppercase tracking-wider shrink-0 w-28">
+                                İlk görülme
+                              </span>
+                              <span className="text-ink mark-number">
+                                {fmtDate(c.sidStats.firstSeen)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {c.ip && (
+                          <>
+                            <div className="flex gap-2 pt-1">
+                              <span className="text-ink-muted uppercase tracking-wider shrink-0 w-28">
+                                Bu IP · 7g
+                              </span>
+                              <StatPair
+                                total={c.ipStats.last7.total}
+                                distinct={c.ipStats.last7.distinctStudents}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-ink-muted uppercase tracking-wider shrink-0 w-28">
+                                Bu IP · 30g
+                              </span>
+                              <StatPair
+                                total={c.ipStats.last30.total}
+                                distinct={c.ipStats.last30.distinctStudents}
+                              />
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

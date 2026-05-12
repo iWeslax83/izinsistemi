@@ -166,9 +166,12 @@ export default function StudentPage({ initialItems = [] }) {
     }
   };
 
+  const toFormal = (s) => (s || "").toLocaleUpperCase("tr-TR");
+
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    const next = name === "neden" ? toFormal(value) : value;
+    setForm((f) => ({ ...f, [name]: next }));
     if (name === "adSoyad") {
       fetchSuggestions(value);
     }
@@ -412,22 +415,22 @@ export default function StudentPage({ initialItems = [] }) {
                           key={r}
                           type="button"
                           onClick={() =>
-                            setForm((f) => ({ ...f, neden: r }))
+                            setForm((f) => ({ ...f, neden: toFormal(r) }))
                           }
-                          className="text-[11px] px-2 py-1 rounded-full border border-line bg-paper hover:border-ink-soft hover:bg-surface text-ink-muted transition"
+                          className="text-[11px] px-2 py-1 rounded-full border border-line bg-paper hover:border-ink-soft hover:bg-surface text-ink-muted transition uppercase tracking-wide"
                           title="Tıkla, neden alanını doldur"
                         >
-                          {r}
+                          {toFormal(r)}
                         </button>
                       ))}
                     </div>
                   )}
                   <textarea
-                    className="field-input resize-none"
+                    className="field-input resize-none uppercase tracking-wide"
                     name="neden"
                     value={form.neden}
                     onChange={onChange}
-                    placeholder="İzin nedenini kısaca açıkla"
+                    placeholder="İZİN NEDENİNİ KISACA AÇIKLA"
                     rows={3}
                     maxLength={200}
                     required

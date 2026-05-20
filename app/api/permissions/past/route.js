@@ -58,7 +58,7 @@ export async function GET(request) {
     const since = dateKeyDaysAgo(days);
 
     const pipeline = [
-      { $match: { gun: { $gte: since, $lt: today } } },
+      { $match: { gun: { $gte: since, $lte: today } } },
       {
         $group: {
           _id: "$gun",

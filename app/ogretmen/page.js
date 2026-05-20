@@ -470,7 +470,7 @@ export default function TeacherPanelPage() {
 
       closePdfPreview();
       if (scope === "today") {
-        await fetchItems();
+        await Promise.all([fetchItems(), fetchPast()]);
       } else if (scope === "past") {
         await Promise.all([fetchPast(), fetchPastItems(pgun)]);
       }

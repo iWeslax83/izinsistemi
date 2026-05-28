@@ -1,5 +1,7 @@
 # Atölye İzin Otomasyon Sistemi
 
+![Views](https://img.shields.io/endpoint?url=https%3A%2F%2Fizinsistemi.vercel.app%2Fapi%2Fviews%2Fbadge)
+
 TOFAŞ Fen Lisesi İnovasyon Atölyesi için izin dilekçesi otomasyonu.
 Next.js (App Router) + MongoDB (Mongoose) + Tailwind CSS + jsPDF. PWA destekli,
 çevrimdışı talep kuyruğu var.

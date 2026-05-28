@@ -1,6 +1,7 @@
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "./sw-register";
+import ViewTracker from "@/components/ViewTracker";
 import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen bg-bg text-ink" suppressHydrationWarning>
         {children}
         <ServiceWorkerRegister />
+        <ViewTracker />
         <Analytics />
       </body>
     </html>

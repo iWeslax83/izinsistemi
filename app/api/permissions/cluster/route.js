@@ -32,7 +32,7 @@ async function statsFor(filter) {
 async function firstSeen(filter) {
   const r = await Permission.findOne(filter)
     .sort({ createdAt: 1 })
-    .select("createdAt gun")
+    .select("createdAt")
     .lean();
   return r?.createdAt || null;
 }

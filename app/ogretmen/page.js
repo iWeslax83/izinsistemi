@@ -282,6 +282,19 @@ export default function TeacherPanelPage() {
     setPastBusy((p) => ({ ...p, [gun]: true }));
     setPastError("");
     try {
+      if (pendingIds.length > 0) {
+        const res = await fetch("/api/permissions/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ ids: pendingIds }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (res.status === 401) setAuthed(false);
+          throw new Error(data.error || "Onay hatası");
+        }
+      }
       const { blob, filename } = await generatePermissionPdf({
         students: chosen,
         gun,
@@ -293,9 +306,12 @@ export default function TeacherPanelPage() {
         blob,
         filename,
         gun,
-        pendingApproveIds: pendingIds,
+        approvedCount: pendingIds.length,
         scope: "past",
       });
+      if (pendingIds.length > 0) {
+        await Promise.all([fetchPast(), fetchPastItems(gun)]);
+      }
     } catch (e) {
       setPastError(e.message);
     } finally {
@@ -413,6 +429,17 @@ export default function TeacherPanelPage() {
     try {
       const ids = Array.from(selected);
       const chosen = items.filter((i) => selected.has(i._id));
+      const res = await fetch("/api/permissions/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 401) setAuthed(false);
+        throw new Error(data.error || "Onay hatası");
+      }
       const { blob, filename } = await generatePermissionPdf({
         students: chosen,
         gun,
@@ -424,9 +451,10 @@ export default function TeacherPanelPage() {
         blob,
         filename,
         gun,
-        pendingApproveIds: ids,
+        approvedCount: ids.length,
         scope: "today",
       });
+      await Promise.all([fetchItems(), fetchPast()]);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -441,9 +469,9 @@ export default function TeacherPanelPage() {
     });
   };
 
-  const confirmPdfPreview = async () => {
+  const confirmPdfPreview = () => {
     if (!pdfPreview) return;
-    const { blob, filename, pendingApproveIds, scope, gun: pgun } = pdfPreview;
+    const { blob, filename } = pdfPreview;
     try {
       const a = document.createElement("a");
       const dlUrl = URL.createObjectURL(blob);
@@ -453,27 +481,7 @@ export default function TeacherPanelPage() {
       a.click();
       a.remove();
       URL.revokeObjectURL(dlUrl);
-
-      if (pendingApproveIds && pendingApproveIds.length > 0) {
-        const res = await fetch("/api/permissions/approve", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ ids: pendingApproveIds }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          if (res.status === 401) setAuthed(false);
-          throw new Error(data.error || "Onay hatası");
-        }
-      }
-
       closePdfPreview();
-      if (scope === "today") {
-        await Promise.all([fetchItems(), fetchPast()]);
-      } else if (scope === "past") {
-        await Promise.all([fetchPast(), fetchPastItems(pgun)]);
-      }
     } catch (e) {
       setError(e.message);
     }
@@ -1089,14 +1097,12 @@ export default function TeacherPanelPage() {
             </div>
             <div className="px-4 sm:px-5 py-3 border-t border-line flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-ink-muted">
-                {pdfPreview.pendingApproveIds?.length > 0
-                  ? `İndir butonuna bastığında ${pdfPreview.pendingApproveIds.length} talep onaylanır.`
-                  : "Tüm seçilen talepler zaten onaylı."}
+                {pdfPreview.approvedCount > 0
+                  ? `${pdfPreview.approvedCount} talep onaylandı. PDF'i indirebilirsiniz.`
+                  : "Talepler zaten onaylı. PDF'i indirebilirsiniz."}
               </p>
               <button className="btn-accent" onClick={confirmPdfPreview}>
-                {pdfPreview.pendingApproveIds?.length > 0
-                  ? "İndir & onayla"
-                  : "İndir"}
+                İndir
               </button>
             </div>
           </div>

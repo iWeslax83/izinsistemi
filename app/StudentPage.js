@@ -228,7 +228,7 @@ export default function StudentPage({ initialItems = [] }) {
   };
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen flex flex-col">
       <nav className="border-b border-line bg-paper/70 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 text-ink">
@@ -250,24 +250,24 @@ export default function StudentPage({ initialItems = [] }) {
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-4 pt-6 sm:pt-10 pb-16">
-        <header className="mb-8 sm:mb-10 max-w-2xl">
-          <p className="eyebrow mb-3">TOFAŞ Fen Lisesi · İnovasyon Atölyesi</p>
-          <h1 className="display text-3xl sm:text-5xl font-semibold leading-[1.1] sm:leading-[1.05] tracking-tight">
+      <div className="max-w-5xl w-full mx-auto px-4 pt-2 sm:pt-3 pb-1 flex-1">
+        <header className="mb-2 sm:mb-3 max-w-2xl">
+          <p className="eyebrow mb-1.5">TOFAŞ Fen Lisesi · İnovasyon Atölyesi</p>
+          <h1 className="display text-2xl sm:text-3xl font-semibold leading-[1.1] sm:leading-[1.05] tracking-tight">
             Atölyede olduğunu,
             <br />
             <span className="italic text-accent">yoklamaya söyle.</span>
           </h1>
-          <p className="mt-4 text-[15px] text-ink-muted leading-relaxed max-w-lg">
+          <p className="mt-2 text-[13px] text-ink-muted leading-relaxed max-w-lg">
             Yoklamada yok yazılmaman için talebini aşağıdan ilet. Öğretmen
             onayladıktan sonra idareye iletilir.
           </p>
         </header>
 
-        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8">
+        <div className="grid lg:grid-cols-12 gap-5 lg:gap-8">
           <div className="lg:col-span-5">
-            <div className="card p-5 sm:p-7">
-              <form onSubmit={onSubmit} className="space-y-4">
+            <div className="card p-4">
+              <form onSubmit={onSubmit} className="space-y-2">
                 {mounted && !online && (
                   <div className="rounded-lg bg-warn-soft border border-warn/20 px-3 py-2.5 text-[13px] text-warn-ink">
                     Çevrimdışısın. Talep sıraya alınır, bağlantı gelince gönderilir.
@@ -431,7 +431,7 @@ export default function StudentPage({ initialItems = [] }) {
                     value={form.neden}
                     onChange={onChange}
                     placeholder="İZİN NEDENİNİ KISACA AÇIKLA"
-                    rows={3}
+                    rows={2}
                     maxLength={200}
                     required
                   />
@@ -439,7 +439,7 @@ export default function StudentPage({ initialItems = [] }) {
 
                 <button
                   type="submit"
-                  className="btn-primary w-full mt-2"
+                  className="btn-primary w-full mt-1"
                   disabled={status.state === "loading"}
                 >
                   {status.state === "loading" ? "Gönderiliyor…" : "Talebi gönder"}
@@ -460,7 +460,7 @@ export default function StudentPage({ initialItems = [] }) {
           </div>
 
           <section className="lg:col-span-7">
-            <div className="flex items-baseline justify-between mb-5 pb-3 border-b border-line">
+            <div className="flex items-baseline justify-between mb-4 pb-3 border-b border-line">
               <div className="flex items-baseline gap-3">
                 <h2 className="display text-2xl font-semibold">Bugün</h2>
                 <span className="text-ink-muted text-sm">
@@ -488,7 +488,7 @@ export default function StudentPage({ initialItems = [] }) {
                 </p>
               </div>
             ) : (
-              <ul className="divide-y divide-line">
+              <ul className="divide-y divide-line lg:max-h-[420px] lg:overflow-y-auto">
                 {list.map((i, idx) => (
                   <li
                     key={i._id}
@@ -521,9 +521,16 @@ export default function StudentPage({ initialItems = [] }) {
         </div>
       </div>
 
-      <footer className="border-t border-line mt-10">
-        <div className="max-w-5xl mx-auto px-4 py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-muted">
+      <footer className="border-t border-line">
+        <div className="max-w-5xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-muted">
           <span>TOFAŞ Fen Lisesi İnovasyon Atölyesi</span>
+          <img
+            src="/stratos-bird.png"
+            alt="Stratos Havacılık"
+            width={104}
+            height={50}
+            className="h-[50px] w-auto object-contain"
+          />
           <span className="mark-number">© 2026</span>
         </div>
       </footer>

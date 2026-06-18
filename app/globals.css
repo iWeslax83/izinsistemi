@@ -20,12 +20,7 @@
   }
 
   body {
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      rgba(28, 25, 23, 0.04) 1px,
-      transparent 0
-    );
-    background-size: 24px 24px;
+    /* Decorative dotted-grid background removed — flat surface */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }

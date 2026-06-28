@@ -523,7 +523,16 @@ export default function StudentPage({ initialItems = [] }) {
 
       <footer className="border-t border-line">
         <div className="max-w-5xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-muted">
-          <span>TOFAŞ Fen Lisesi İnovasyon Atölyesi</span>
+          <span className="flex items-center gap-2">
+            <img
+              src="/tofasfenlogo.png"
+              alt="TOFAŞ Fen Lisesi"
+              width={42}
+              height={50}
+              className="h-[50px] w-auto object-contain"
+            />
+            TOFAŞ Fen Lisesi İnovasyon Atölyesi
+          </span>
           <img
             src="/stratos-bird.png"
             alt="Stratos Havacılık"

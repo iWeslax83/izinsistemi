@@ -523,7 +523,7 @@ export default function StudentPage({ initialItems = [] }) {
 
       <footer className="border-t border-line">
         <div className="max-w-5xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-muted">
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-3">
             <img
               src="/tofasfenlogo.png"
               alt="TOFAŞ Fen Lisesi"
@@ -531,22 +531,21 @@ export default function StudentPage({ initialItems = [] }) {
               height={50}
               className="h-[50px] w-auto object-contain"
             />
-            TOFAŞ Fen Lisesi İnovasyon Atölyesi
+            <a
+              href="https://stratosiha.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center"
+            >
+              <img
+                src="/stratos-logo.svg"
+                alt="Stratos Havacılık"
+                width={104}
+                height={50}
+                className="h-[50px] w-auto object-contain"
+              />
+            </a>
           </span>
-          <a
-            href="https://stratosiha.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center"
-          >
-            <img
-              src="/stratos-logo.svg"
-              alt="Stratos Havacılık"
-              width={104}
-              height={50}
-              className="h-[50px] w-auto object-contain"
-            />
-          </a>
           <span className="mark-number">© 2026</span>
         </div>
       </footer>

@@ -533,13 +533,20 @@ export default function StudentPage({ initialItems = [] }) {
             />
             TOFAŞ Fen Lisesi İnovasyon Atölyesi
           </span>
-          <img
-            src="/stratos-bird.png"
-            alt="Stratos Havacılık"
-            width={104}
-            height={50}
-            className="h-[50px] w-auto object-contain"
-          />
+          <a
+            href="https://stratosiha.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center"
+          >
+            <img
+              src="/stratos-logo.svg"
+              alt="Stratos Havacılık"
+              width={104}
+              height={50}
+              className="h-[50px] w-auto object-contain"
+            />
+          </a>
           <span className="mark-number">© 2026</span>
         </div>
       </footer>

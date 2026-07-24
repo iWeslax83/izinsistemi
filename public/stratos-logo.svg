@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="32 94 448 294" role="img" aria-label="Stratos İHA Takımı amblemi">
+  <g fill="#05080F">
+    <polygon points="296,236 470,158 470,188 296,266"/>
+    <polygon points="308,292 439,233 439,263 308,322"/>
+    <polygon points="318,348 408,307 408,337 318,378"/>
+    <polygon points="216,236 42,158 42,188 216,266"/>
+    <polygon points="204,292 73,233 73,263 204,322"/>
+    <polygon points="194,348 104,307 104,337 194,378"/>
+  </g>
+  <polygon fill="#4FB3BF" points="256,104 310,352 256,300 202,352"/>
+</svg>

@@ -31,5 +31,10 @@ const PermissionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+PermissionSchema.index(
+  { adSoyad: 1 },
+  { collation: { locale: "tr", strength: 2 } }
+);
+
 export default mongoose.models.Permission ||
   mongoose.model("Permission", PermissionSchema);

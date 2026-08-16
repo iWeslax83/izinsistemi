@@ -15,7 +15,7 @@ export async function GET(request) {
     const students = await Permission.aggregate([
       {
         $match: {
-          adSoyad: { $regex: escapeRegex(q), $options: "i" },
+          adSoyad: { $regex: "^" + escapeRegex(q), $options: "i" },
         },
       },
       { $sort: { createdAt: -1 } },
@@ -36,7 +36,7 @@ export async function GET(request) {
         },
       },
       { $limit: 8 },
-    ]);
+    ]).collation({ locale: "tr", strength: 2 });
 
     return NextResponse.json({ students });
   } catch (e) {

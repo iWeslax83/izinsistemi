@@ -18,6 +18,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://izinsistemi.vercel.app"),
   title: "Atölye İzin",
   description: "TOFAŞ Fen Lisesi İnovasyon Atölyesi izin otomasyonu",
   manifest: "/manifest.json",
@@ -32,6 +33,15 @@ export const metadata = {
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: "/icon-192.png",
+  },
+  openGraph: {
+    title: "Atölye İzin",
+    description: "TOFAŞ Fen Lisesi İnovasyon Atölyesi izin otomasyonu",
+    url: "https://izinsistemi.vercel.app",
+    siteName: "Atölye İzin",
+    images: ["/og-image.png"],
+    locale: "tr_TR",
+    type: "website",
   },
 };
 

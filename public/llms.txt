@@ -1,0 +1,5 @@
+# Atölye İzin Sistemi
+
+TOFAŞ Fen Lisesi İnovasyon Atölyesi için izin otomasyon sistemi. Öğrenciler ders saatinden atölye kullanımı için izin talep eder, öğretmenler onaylar.
+
+This is an internal permission-tracking tool for TOFAŞ Fen Lisesi (Bursa, Turkey), not a public marketing site. Access is restricted to school staff and students.

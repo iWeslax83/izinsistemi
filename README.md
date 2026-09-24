@@ -21,6 +21,7 @@ npm run dev
 | `MONGODB_URI` | MongoDB bağlantı URI'si |
 | `TEACHER_PASSWORD` | Öğretmen paneli şifresi |
 | `CRON_SECRET` | `/api/cron/archive` endpoint'i için bearer token |
+| `PERMISSION_SYNC_TOKEN` | `/api/permissions/bulk` için bearer token (Stratos admin) |
 
 ## Sayfalar
 
@@ -55,6 +56,7 @@ Aynı öğrenci (okulNo) aynı gün birden fazla talep açamaz.
 | Yöntem | Yol | Açıklama |
 | --- | --- | --- |
 | `POST` | `/api/permissions` | Yeni talep oluşturur |
+| `POST` | `/api/permissions/bulk` | Bearer token ile toplu talep açar (en fazla 50), `beklemede` |
 | `GET` | `/api/permissions` | `x-teacher-password` ile günün bekleyen talepleri |
 | `POST` | `/api/permissions/approve` | Seçili talepleri onaylar |
 | `GET` | `/api/permissions/public?gun=YYYY-MM-DD` | Herhangi bir günün public listesi |

@@ -3,11 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { generatePermissionPdf } from "@/lib/pdf";
-import { formatTurkishDate } from "@/lib/date";
+import { formatTurkishDate, dateKeyDaysAgo } from "@/lib/date";
 import { ArrowLeft, Chevron, Bell, Info } from "@/components/Icons";
 
 const REFRESH_INTERVAL_MS = 30_000;
 const PAST_DAYS = 30;
+const SINIFLAR = [9, 10, 11, 12];
+const SUBELER = ["A", "B", "C", "D"];
+const DERSLER = [1, 2, 3, 4, 5, 6, 7, 8];
+const PAST_ADD_EMPTY = {
+  gun: "",
+  adSoyad: "",
+  okulNo: "",
+  sinif: "",
+  sube: "",
+  baslangicDersi: "",
+  bitisDersi: "",
+  neden: "",
+};
 
 export default function TeacherPanelPage() {
   const [password, setPassword] = useState("");
@@ -31,6 +44,10 @@ export default function TeacherPanelPage() {
   const [pdfPreview, setPdfPreview] = useState(null);
   const [newArrived, setNewArrived] = useState(0);
   const [studentHistory, setStudentHistory] = useState(null);
+  const [pastAddOpen, setPastAddOpen] = useState(false);
+  const [pastAddForm, setPastAddForm] = useState(PAST_ADD_EMPTY);
+  const [pastAddBusy, setPastAddBusy] = useState(false);
+  const [pastAddMsg, setPastAddMsg] = useState(null);
   const prevIdsRef = useRef(new Set());
   const authedRef = useRef(false);
   const audioCtxRef = useRef(null);
@@ -194,6 +211,45 @@ export default function TeacherPanelPage() {
       document.removeEventListener("visibilitychange", tick);
     };
   }, []);
+
+  const onPastAddChange = (e) => {
+    const { name, value } = e.target;
+    setPastAddForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const onPastAdd = async (e) => {
+    e.preventDefault();
+    setPastAddBusy(true);
+    setPastAddMsg(null);
+    try {
+      const res = await fetch("/api/permissions/past", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pastAddForm),
+      });
+      if (res.status === 401) {
+        setAuthed(false);
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Kayıt eklenemedi");
+      setPastAddMsg({
+        type: "ok",
+        text: `${pastAddForm.adSoyad.trim()} için ${formatTurkishDate(data.gun)} kaydı eklendi.`,
+      });
+      // Tarih açık kalır, aynı güne arka arkaya öğrenci girilebilir.
+      setPastAddForm((f) => ({ ...PAST_ADD_EMPTY, gun: f.gun }));
+      await fetchPast();
+      if (pastItems[data.gun] || pastExpanded[data.gun]) {
+        await fetchPastItems(data.gun);
+      }
+    } catch (err) {
+      setPastAddMsg({ type: "error", text: err.message });
+    } finally {
+      setPastAddBusy(false);
+    }
+  };
 
   const onLogin = async (e) => {
     e.preventDefault();
@@ -746,7 +802,16 @@ export default function TeacherPanelPage() {
                 yeniden indirin.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setPastAddOpen((o) => !o)}
+                aria-expanded={pastAddOpen}
+                aria-controls="past-add-form"
+              >
+                {pastAddOpen ? "Formu kapat" : "Geçmiş güne kayıt ekle"}
+              </button>
               {pastDays.some((d) => d.pending > 0) && (
                 <button
                   className="btn-accent"
@@ -770,6 +835,168 @@ export default function TeacherPanelPage() {
               </button>
             </div>
           </header>
+
+          {pastAddOpen && (
+            <form
+              id="past-add-form"
+              onSubmit={onPastAdd}
+              className="panel p-4 sm:p-5 mb-4"
+            >
+              <p className="text-sm text-ink-muted mb-4">
+                Unuttuğunuz günün talebini sonradan açın. Kayıt bekleyen olarak
+                girer, aşağıdaki günün içinden onaylanır. Son {PAST_DAYS} gün
+                seçilebilir.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="field-label" htmlFor="pa-gun">Tarih</label>
+                  <input
+                    id="pa-gun"
+                    type="date"
+                    className="field-input"
+                    name="gun"
+                    value={pastAddForm.gun}
+                    onChange={onPastAddChange}
+                    min={dateKeyDaysAgo(PAST_DAYS)}
+                    max={dateKeyDaysAgo(1)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="pa-okulNo">Okul No</label>
+                  <input
+                    id="pa-okulNo"
+                    className="field-input"
+                    name="okulNo"
+                    value={pastAddForm.okulNo}
+                    onChange={onPastAddChange}
+                    placeholder="1234"
+                    autoComplete="off"
+                    required
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="field-label" htmlFor="pa-adSoyad">Ad Soyad</label>
+                  <input
+                    id="pa-adSoyad"
+                    className="field-input"
+                    name="adSoyad"
+                    value={pastAddForm.adSoyad}
+                    onChange={onPastAddChange}
+                    placeholder="Ahmet Yılmaz"
+                    autoComplete="off"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="field-label" htmlFor="pa-sinif">Sınıf</label>
+                    <select
+                      id="pa-sinif"
+                      className="field-input"
+                      name="sinif"
+                      value={pastAddForm.sinif}
+                      onChange={onPastAddChange}
+                      required
+                    >
+                      <option value="">Seç</option>
+                      {SINIFLAR.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="field-label" htmlFor="pa-sube">Şube</label>
+                    <select
+                      id="pa-sube"
+                      className="field-input"
+                      name="sube"
+                      value={pastAddForm.sube}
+                      onChange={onPastAddChange}
+                      required
+                    >
+                      <option value="">Seç</option>
+                      {SUBELER.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="field-label" htmlFor="pa-baslangic">Başlangıç</label>
+                    <select
+                      id="pa-baslangic"
+                      className="field-input"
+                      name="baslangicDersi"
+                      value={pastAddForm.baslangicDersi}
+                      onChange={onPastAddChange}
+                      required
+                    >
+                      <option value="">Seç</option>
+                      {DERSLER.map((d) => (
+                        <option key={d} value={d}>{d}. ders</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="field-label" htmlFor="pa-bitis">Bitiş</label>
+                    <select
+                      id="pa-bitis"
+                      className="field-input"
+                      name="bitisDersi"
+                      value={pastAddForm.bitisDersi}
+                      onChange={onPastAddChange}
+                      required
+                    >
+                      <option value="">Seç</option>
+                      {DERSLER.map((d) => (
+                        <option key={d} value={d}>{d}. ders</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    className="field-label flex items-center justify-between"
+                    htmlFor="pa-neden"
+                  >
+                    <span>Neden</span>
+                    <span className="text-[11px] text-ink-soft font-normal mark-number">
+                      {pastAddForm.neden.length}/200
+                    </span>
+                  </label>
+                  <textarea
+                    id="pa-neden"
+                    className="field-input resize-none uppercase tracking-wide"
+                    name="neden"
+                    value={pastAddForm.neden}
+                    onChange={onPastAddChange}
+                    placeholder="İZİN NEDENİNİ KISACA AÇIKLA"
+                    rows={2}
+                    maxLength={200}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button type="submit" className="btn-primary" disabled={pastAddBusy}>
+                  {pastAddBusy ? "Ekleniyor…" : "Kaydı ekle"}
+                </button>
+                {pastAddMsg && (
+                  <p
+                    role="status"
+                    className={`text-[13px] ${
+                      pastAddMsg.type === "ok" ? "text-ok-ink" : "text-danger-ink"
+                    }`}
+                  >
+                    {pastAddMsg.text}
+                  </p>
+                )}
+              </div>
+            </form>
+          )}
 
           <div className="mb-4">
             <input

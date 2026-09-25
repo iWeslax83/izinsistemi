@@ -18,7 +18,8 @@ const ClientMetaSchema = new mongoose.Schema(
     secChUaPlatform: String,
     secChUaMobile: String,
     dnt: String,
-    // İsteğin kaynağı. Öğrenci formu boş bırakır, Stratos admin "stratos-admin" yazar.
+    // İsteğin kaynağı. Öğrenci formu boş bırakır, Stratos admin "stratos-admin",
+    // öğretmenin geçmiş güne eklediği kayıt "teacher-backdate" yazar.
     source: String,
   },
   { _id: false }

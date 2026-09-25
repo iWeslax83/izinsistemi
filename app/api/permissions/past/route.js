@@ -4,11 +4,79 @@ import Permission from "@/models/Permission";
 import PermissionArchive from "@/models/PermissionArchive";
 import { verifyTeacherSession, isSameOrigin } from "@/lib/auth";
 import { todayKey, dateKeyDaysAgo } from "@/lib/date";
+import { logAction } from "@/lib/audit";
+import { extractIp, extractUa, extractMeta, getOrCreateSid } from "@/lib/clientInfo";
+import { validatePermissionInput, validatePastGun } from "@/lib/permissionInput";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 90;
+const SOURCE = "teacher-backdate";
+
+export async function POST(request) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 403 });
+  }
+  if (!verifyTeacherSession()) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+  }
+
+  const ip = extractIp(request);
+  const ua = extractUa(request);
+  const { sid } = getOrCreateSid();
+
+  try {
+    const body = await request.json().catch(() => null);
+    const day = validatePastGun(body?.gun, todayKey());
+    if (!day.ok) {
+      return NextResponse.json({ error: day.error }, { status: 400 });
+    }
+    const parsed = validatePermissionInput(body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    await dbConnect();
+    const { gun } = day;
+    const existing = await Permission.findOne({ okulNo: parsed.value.okulNo, gun }).lean();
+    if (existing) {
+      return NextResponse.json(
+        { error: "Bu öğrencinin o gün için zaten talebi var." },
+        { status: 409 }
+      );
+    }
+
+    const doc = await Permission.create({
+      ...parsed.value,
+      gun,
+      status: "beklemede",
+      meta: { ...extractMeta(request), sid, source: SOURCE },
+    });
+
+    logAction({
+      actor: "ogretmen",
+      actorRef: "teacher",
+      action: "submit",
+      target: doc._id,
+      meta: {
+        source: SOURCE,
+        gun,
+        okulNo: doc.okulNo,
+        sinif: doc.sinif,
+        sube: doc.sube,
+        baslangicDersi: doc.baslangicDersi,
+        bitisDersi: doc.bitisDersi,
+      },
+      ip, sid, ua,
+    });
+
+    return NextResponse.json({ ok: true, id: doc._id, gun });
+  } catch (e) {
+    console.error("POST /api/permissions/past", e);
+    return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
+  }
+}
 
 export async function GET(request) {
   if (!isSameOrigin(request)) {

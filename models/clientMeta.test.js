@@ -17,6 +17,7 @@ const META_FIELDS = [
   "secChUaPlatform",
   "secChUaMobile",
   "dnt",
+  "source",
 ];
 
 const metaPaths = (model) =>

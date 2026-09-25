@@ -21,6 +21,7 @@ npm run dev
 | `MONGODB_URI` | MongoDB bağlantı URI'si |
 | `TEACHER_PASSWORD` | Öğretmen paneli şifresi |
 | `CRON_SECRET` | `/api/cron/archive` endpoint'i için bearer token |
+| `PERMISSION_SYNC_TOKEN` | `/api/permissions/bulk` için bearer token (Stratos admin) |
 
 ## Sayfalar
 
@@ -29,7 +30,8 @@ npm run dev
 - `/gecmis` — Öğrenci okul numarasıyla son 50 talebini görür.
 - `/takvim` — Aylık takvim görünümü; güne tıklayınca o günün tüm talepleri listelenir.
 - `/ogretmen` — Öğretmen paneli (şifre korumalı). Günün bekleyen taleplerini listeler,
-  toplu onay + PDF üretimi sunar.
+  toplu onay + PDF üretimi sunar. "Geçmiş günler" bölümünden unutulan güne
+  (son 30 gün) sonradan talep eklenebilir.
 - `/ogretmen/log` — Audit log görüntüleyici (şifre korumalı). Öğrenci/öğretmen/sistem
   eylemlerini filtreli listeler.
 
@@ -55,6 +57,8 @@ Aynı öğrenci (okulNo) aynı gün birden fazla talep açamaz.
 | Yöntem | Yol | Açıklama |
 | --- | --- | --- |
 | `POST` | `/api/permissions` | Yeni talep oluşturur |
+| `POST` | `/api/permissions/bulk` | Bearer token ile toplu talep açar (en fazla 50), `beklemede` |
+| `POST` | `/api/permissions/past` | Öğretmen oturumuyla geçmiş güne (dün ile 90 gün öncesi arası) `beklemede` talep açar, gövdede `gun` (`YYYY-MM-DD`) + form alanları |
 | `GET` | `/api/permissions` | `x-teacher-password` ile günün bekleyen talepleri |
 | `POST` | `/api/permissions/approve` | Seçili talepleri onaylar |
 | `GET` | `/api/permissions/public?gun=YYYY-MM-DD` | Herhangi bir günün public listesi |

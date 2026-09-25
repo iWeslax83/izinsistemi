@@ -6,6 +6,7 @@ import { hitBucket, hitDistinctBucket, rateLimitResponse } from "@/lib/rateLimit
 import { logAction } from "@/lib/audit";
 import { extractIp, extractUa, extractMeta, getOrCreateSid } from "@/lib/clientInfo";
 import { verifyTeacherSession, isSameOrigin } from "@/lib/auth";
+import { validatePermissionInput } from "@/lib/permissionInput";
 
 export async function POST(request) {
   const ip = extractIp(request);
@@ -52,35 +53,11 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { adSoyad, okulNo, sinif, sube, baslangicDersi, bitisDersi, neden } = body;
-
-    if (
-      !adSoyad || !okulNo || !sinif || !sube ||
-      !baslangicDersi || !bitisDersi || !neden ||
-      !String(neden).trim()
-    ) {
-      return NextResponse.json(
-        { error: "Tüm alanların doldurulması zorunludur." },
-        { status: 400 }
-      );
+    const parsed = validatePermissionInput(body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-
-    const nedenTrim = String(neden).trim();
-    if (nedenTrim.length > 200) {
-      return NextResponse.json(
-        { error: "Neden en fazla 200 karakter olabilir." },
-        { status: 400 }
-      );
-    }
-
-    if (Number(bitisDersi) < Number(baslangicDersi)) {
-      return NextResponse.json(
-        { error: "Bitiş dersi başlangıç dersinden küçük olamaz." },
-        { status: 400 }
-      );
-    }
-
-    const okulNoTrim = String(okulNo).trim();
+    const { adSoyad, okulNo: okulNoTrim, sinif, sube, baslangicDersi, bitisDersi, neden: nedenTrim } = parsed.value;
 
     if (!teacherBypass) {
       const distinct = await hitDistinctBucket({
@@ -112,12 +89,12 @@ export async function POST(request) {
     }
 
     const doc = await Permission.create({
-      adSoyad: String(adSoyad).trim(),
+      adSoyad,
       okulNo: okulNoTrim,
-      sinif: Number(sinif),
-      sube: String(sube).toUpperCase(),
-      baslangicDersi: Number(baslangicDersi),
-      bitisDersi: Number(bitisDersi),
+      sinif,
+      sube,
+      baslangicDersi,
+      bitisDersi,
       neden: nedenTrim,
       gun,
       status: "beklemede",
